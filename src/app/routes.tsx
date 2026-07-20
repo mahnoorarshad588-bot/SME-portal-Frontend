@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import Intro from "./pages/Intro";
 import SmeAuth from "./pages/sme/SmeAuth";
 import BusinessSetup from "./pages/sme/BusinessSetup";
@@ -18,7 +18,7 @@ import SbpAuth from "./pages/sbp/SbpAuth";
 import SbpLayout from "./pages/sbp/SbpLayout";
 import SbpPortal from "./pages/sbp/SbpPortal";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   { path: "/", Component: Intro },
   { path: "/sme/login", Component: SmeAuth },
   { path: "/sme/setup", Component: BusinessSetup },
