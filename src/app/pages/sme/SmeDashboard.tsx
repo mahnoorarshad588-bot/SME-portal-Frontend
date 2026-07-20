@@ -99,10 +99,10 @@ export default function SmeDashboard() {
 
       {/* Business snapshot strip */}
       <GradientCard accent={C.green} className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 px-5 py-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3.5 sm:px-5 py-3 sm:py-4">
+          <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: `linear-gradient(135deg, ${C.green}, ${C.greenDark})` }}>
-            <Building2 className="w-5 h-5 text-white" />
+            <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-base font-extrabold truncate" style={{ color: C.text }}>{selectedBusiness?.name ?? "—"}</div>
@@ -121,20 +121,20 @@ export default function SmeDashboard() {
       </GradientCard>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-6">
         {CARDS.map(({ label, value, icon: Icon, color, path }) => (
           <GradientCard key={label} accent={color}>
             <button
               onClick={() => path ? navigate(path) : undefined}
-              className="w-full h-full text-left p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
+              className="w-full h-full text-left p-2.5 sm:p-4 rounded-2xl transition-all duration-200 hover:-translate-y-0.5"
               style={{ background: C.surface }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3"
+              <div className="w-6 h-6 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center mb-1.5 sm:mb-3"
                 style={{ background: color + "18" }}>
-                <Icon className="w-4 h-4" style={{ color }} />
+                <Icon className="w-3 h-3 sm:w-4 sm:h-4" style={{ color }} />
               </div>
-              <div className="text-2xl font-black leading-none mb-1"
+              <div className="text-base sm:text-2xl font-black leading-none mb-0.5 sm:mb-1"
                 style={{ color: C.text, fontFamily: "var(--font-mono)", letterSpacing: "-0.02em" }}>{value}</div>
-              <div className="text-xs font-medium leading-snug" style={{ color: C.textMuted }}>{label}</div>
+              <div className="text-[10px] sm:text-xs font-medium leading-snug" style={{ color: C.textMuted }}>{label}</div>
             </button>
           </GradientCard>
         ))}
@@ -213,7 +213,7 @@ export default function SmeDashboard() {
         <div className="space-y-4">
           {/* Application composition */}
           <GradientCard accent={C.green}>
-            <div className="p-5">
+            <div className="p-3.5 sm:p-5">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.greenLight }}>
                   <PieChart className="w-3.5 h-3.5" style={{ color: C.green }} />
@@ -257,7 +257,7 @@ export default function SmeDashboard() {
 
           {/* Quick actions */}
           <GradientCard accent={C.blue}>
-            <div className="p-5">
+            <div className="p-3.5 sm:p-5">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.blueLight }}>
                   <Activity className="w-3.5 h-3.5" style={{ color: C.blue }} />
@@ -290,7 +290,7 @@ export default function SmeDashboard() {
 
           {/* Timeline */}
           <GradientCard accent={C.orange}>
-            <div className="p-5">
+            <div className="p-3.5 sm:p-5">
               <div className="flex items-center gap-2.5 mb-4">
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.orangeLight }}>
                   <History className="w-3.5 h-3.5" style={{ color: C.orange }} />

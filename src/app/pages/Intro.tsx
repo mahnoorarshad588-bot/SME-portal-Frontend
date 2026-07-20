@@ -465,23 +465,23 @@ export default function Intro() {
             </div>
           </Reveal>
 
-          {/* Connecting timeline row */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-0 relative">
+          {/* Connecting timeline row — always a single horizontal line of steps */}
+          <div className="grid grid-cols-4 gap-0 relative">
             {/* connector line */}
-            <div className="hidden md:block absolute top-[22px] left-[12.5%] right-[12.5%] h-px" style={{ background: `linear-gradient(90deg, ${G.green}00, ${G.green}40 20%, ${G.green}40 80%, ${G.green}00)` }} />
+            <div className="absolute top-[16px] sm:top-[22px] left-[12.5%] right-[12.5%] h-px" style={{ background: `linear-gradient(90deg, ${G.green}00, ${G.green}40 20%, ${G.green}40 80%, ${G.green}00)` }} />
 
             {HOW_STEPS.map(({ n, title, desc }, i) => (
               <Reveal key={n} delay={i * 100}>
-                <div className="relative flex flex-col items-start md:items-center md:text-center px-4 py-6 md:py-0">
+                <div className="relative flex flex-col items-center text-center px-1 sm:px-4">
                   {/* step indicator */}
-                  <div className="relative z-10 mb-6 flex items-center gap-3 md:flex-col md:gap-2">
-                    <div className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+                  <div className="relative z-10 mb-2 sm:mb-6 flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-black flex-shrink-0"
                       style={{ background: i === 0 ? G.green : "#fff", border: `2px solid ${G.green}`, color: i === 0 ? "#fff" : G.green, fontFamily: "var(--font-mono)" }}>
                       {n}
                     </div>
                   </div>
-                  <div className="text-sm font-bold mb-2" style={{ color: G.text }}>{title}</div>
-                  <p className="text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
+                  <div className="text-[11px] sm:text-sm font-bold mb-1 sm:mb-2 leading-tight" style={{ color: G.text }}>{title}</div>
+                  <p className="hidden sm:block text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
                 </div>
               </Reveal>
             ))}
