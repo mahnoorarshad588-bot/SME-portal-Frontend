@@ -8,7 +8,7 @@ import {
   Store, Landmark, ShieldCheck,
   FileText, MapPin, ClipboardCheck, Upload, Building2, Bell,
   Users, Banknote,
-  ChevronDown, ChevronUp, Phone, Mail, Globe,
+  ChevronDown, ChevronUp, Phone, Mail, Globe, Menu, X,
 } from "lucide-react";
 
 const G = {
@@ -143,6 +143,7 @@ export default function Intro() {
   const [hoveredRole, setHoveredRole]       = useState<string | null>(null);
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
   const [openFaq, setOpenFaq]               = useState<number | null>(null);
+  const [mobileNavOpen, setMobileNavOpen]   = useState(false);
 
   const visibleRoles = ROLES;
 
@@ -177,11 +178,39 @@ export default function Intro() {
           </nav>
 
           <button onClick={() => document.getElementById("access-portal")?.scrollIntoView({ behavior: "smooth" })}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 active:scale-[0.97] transition-all flex-shrink-0"
+            className="hidden sm:flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white hover:opacity-90 active:scale-[0.97] transition-all flex-shrink-0"
             style={{ background: G.blue }}>
             Login / Sign Up <ArrowRight className="w-3.5 h-3.5" />
           </button>
+
+          {/* Mobile menu toggle */}
+          <button onClick={() => setMobileNavOpen(!mobileNavOpen)}
+            className="lg:hidden p-2 rounded-lg flex-shrink-0" style={{ color: G.text }}
+            aria-label="Toggle navigation menu">
+            {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
+
+        {/* Mobile menu panel */}
+        {mobileNavOpen && (
+          <div className="lg:hidden px-6 py-4 border-t" style={{ borderColor: G.border, background: "#fff" }}>
+            <nav className="flex flex-col gap-1 mb-4">
+              {NAV_LINKS.map((link, i) => (
+                <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
+                  onClick={() => setMobileNavOpen(false)}
+                  className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                  style={{ color: i === 0 ? G.green : G.text, fontWeight: i === 0 ? 700 : 500, background: i === 0 ? G.greenLight : "transparent" }}>
+                  {link}
+                </a>
+              ))}
+            </nav>
+            <button onClick={() => { setMobileNavOpen(false); document.getElementById("access-portal")?.scrollIntoView({ behavior: "smooth" }); }}
+              className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-lg text-sm font-bold text-white hover:opacity-90 active:scale-[0.97] transition-all"
+              style={{ background: G.blue }}>
+              Login / Sign Up <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ══════════════════════════════════════════

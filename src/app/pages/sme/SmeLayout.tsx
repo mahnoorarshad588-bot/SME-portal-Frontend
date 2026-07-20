@@ -126,15 +126,15 @@ export default function SmeLayout() {
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="h-14 flex items-center px-5 gap-4 flex-shrink-0 border-b"
+        <header className="h-auto min-h-14 flex flex-wrap items-center px-3 sm:px-5 py-2 gap-2 sm:gap-3 flex-shrink-0 border-b"
           style={{ background: C.surface, borderColor: C.border }}>
 
-          <button className="lg:hidden p-1" onClick={() => setSidebarOpen(true)} style={{ color: C.textMuted }}>
+          <button className="lg:hidden p-1 flex-shrink-0" onClick={() => setSidebarOpen(true)} style={{ color: C.textMuted }}>
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Page title */}
-          <div className="hidden md:block pr-4 mr-1 border-r" style={{ borderColor: C.border }}>
+          <div className="hidden xl:block pr-4 mr-1 border-r flex-shrink-0" style={{ borderColor: C.border }}>
             <div className="text-sm font-bold leading-tight" style={{ color: C.text }}>
               {NAV.find(n => isActive(n.path))?.label ?? "Dashboard"}
             </div>
@@ -144,17 +144,17 @@ export default function SmeLayout() {
           </div>
 
           {/* Business selector */}
-          <div className="relative">
+          <div className="relative flex-shrink-0 min-w-0">
             <button
               onClick={() => setBizDropdown(!bizDropdown)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all"
+              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg border text-sm font-medium transition-all min-w-0"
               style={{ border: `1.5px solid ${C.border}`, color: C.text, background: C.bg }}>
-              <Building2 className="w-3.5 h-3.5" style={{ color: C.green }} />
-              <span className="max-w-[140px] truncate">{selectedBusiness?.name}</span>
-              <ChevronDown className="w-3.5 h-3.5" style={{ color: C.textMuted }} />
+              <Building2 className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.green }} />
+              <span className="max-w-[90px] sm:max-w-[140px] truncate">{selectedBusiness?.name}</span>
+              <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.textMuted }} />
             </button>
             {bizDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-56 rounded-xl border shadow-lg overflow-hidden z-10"
+              <div className="absolute top-full left-0 mt-1 w-56 max-w-[85vw] rounded-xl border shadow-lg overflow-hidden z-10"
                 style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
                 {businesses.map(b => (
                   <button key={b.id} onClick={() => { setSelectedBusiness(b); setBizDropdown(false); }}
@@ -179,7 +179,7 @@ export default function SmeLayout() {
           </div>
 
           {/* Search */}
-          <div className="hidden sm:flex relative flex-1 max-w-xs">
+          <div className="hidden md:flex relative flex-1 min-w-[100px] max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: C.textMuted }} />
             <input type="text" placeholder="Search applications, businesses..."
               className="w-full rounded-lg border text-xs outline-none transition-all"
@@ -188,10 +188,10 @@ export default function SmeLayout() {
               onBlur={e => { e.currentTarget.style.border = `1.5px solid ${C.border}`; e.currentTarget.style.background = C.bg; }} />
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden md:block flex-1" />
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative flex-shrink-0 ml-auto md:ml-0">
             <button onClick={() => setNotifOpen(!notifOpen)}
               className="relative p-2 rounded-lg hover:bg-gray-100 transition-all"
               style={{ color: C.textMuted }}>
@@ -199,7 +199,7 @@ export default function SmeLayout() {
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: C.orange }} />
             </button>
             {notifOpen && (
-              <div className="absolute right-0 top-full mt-1 w-72 rounded-xl border shadow-lg z-10"
+              <div className="absolute right-0 top-full mt-1 w-72 max-w-[90vw] rounded-xl border shadow-lg z-10"
                 style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
                 <div className="px-4 py-3 border-b flex items-center justify-between"
                   style={{ borderColor: C.border }}>
@@ -229,12 +229,12 @@ export default function SmeLayout() {
           </div>
 
           {/* User avatar */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
               style={{ background: C.green }}>
               {user?.name?.[0] ?? "A"}
             </div>
-            <span className="hidden md:block text-sm font-medium" style={{ color: C.text }}>
+            <span className="hidden lg:block text-sm font-medium" style={{ color: C.text }}>
               {user?.name?.split(" ")[0] ?? "User"}
             </span>
           </div>
