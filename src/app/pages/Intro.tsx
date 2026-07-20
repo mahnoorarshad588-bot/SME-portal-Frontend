@@ -353,7 +353,7 @@ export default function Intro() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
             {/* Left block: 2×2 smaller cards */}
-            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="lg:col-span-2 grid grid-cols-2 gap-3 sm:gap-4">
               {FEATURES.slice(0, 4).map(({ icon: Icon, title, desc, color, bg }, i) => {
                 const isHov = hoveredFeature === i;
                 return (
@@ -362,17 +362,17 @@ export default function Intro() {
                       <div
                         onMouseEnter={() => setHoveredFeature(i)}
                         onMouseLeave={() => setHoveredFeature(null)}
-                        className="h-full rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 cursor-default"
+                        className="h-full rounded-2xl p-3 sm:p-6 flex flex-col gap-2 sm:gap-4 transition-all duration-200 cursor-default"
                         style={{ background: isHov ? "#fff" : "#FAFBFB", boxShadow: isHov ? `0 12px 36px -4px ${color}22` : "none", transform: isHov ? "translateY(-3px)" : "none" }}>
                         <div className="flex items-center justify-between">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
-                            <Icon className="w-4.5 h-4.5" style={{ color, width: "18px", height: "18px" }} />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
+                            <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" style={{ color, width: "16px", height: "16px" }} />
                           </div>
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: color + "55" }}>0{i + 1}</span>
                         </div>
                         <div>
-                          <div className="text-sm font-bold mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
-                          <p className="text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
+                          <div className="text-xs sm:text-sm font-bold mb-1 sm:mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
+                          <p className="text-[11px] sm:text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
                         </div>
                       </div>
                     </GradientBox>
@@ -381,8 +381,8 @@ export default function Intro() {
               })}
             </div>
 
-            {/* Right block: 2 stacked cards */}
-            <div className="flex flex-col gap-4">
+            {/* Right block: 2 stacked cards (2-up on mobile, stacked from lg) */}
+            <div className="grid grid-cols-2 lg:flex lg:flex-col gap-3 sm:gap-4">
               {FEATURES.slice(4).map(({ icon: Icon, title, desc, color, bg }, i) => {
                 const idx = i + 4;
                 const isHov = hoveredFeature === idx;
@@ -392,17 +392,17 @@ export default function Intro() {
                       <div
                         onMouseEnter={() => setHoveredFeature(idx)}
                         onMouseLeave={() => setHoveredFeature(null)}
-                        className="h-full rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 cursor-default"
+                        className="h-full rounded-2xl p-3 sm:p-6 flex flex-col gap-2 sm:gap-4 transition-all duration-200 cursor-default"
                         style={{ background: isHov ? "#fff" : "#FAFBFB", boxShadow: isHov ? `0 12px 36px -4px ${color}22` : "none", transform: isHov ? "translateY(-3px)" : "none" }}>
                         <div className="flex items-center justify-between">
-                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
-                            <Icon className="w-4.5 h-4.5" style={{ color, width: "18px", height: "18px" }} />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
+                            <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" style={{ color, width: "16px", height: "16px" }} />
                           </div>
                           <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: 700, color: color + "55" }}>0{idx + 1}</span>
                         </div>
                         <div>
-                          <div className="text-sm font-bold mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
-                          <p className="text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
+                          <div className="text-xs sm:text-sm font-bold mb-1 sm:mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
+                          <p className="text-[11px] sm:text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
                         </div>
                       </div>
                     </GradientBox>
@@ -428,22 +428,22 @@ export default function Intro() {
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             {CORE_FUNCTIONS.map(({ icon: Icon, title, desc, accent }, i) => (
               <Reveal key={title} delay={i * 80} className="h-full">
                 <GradientBox accent={accent} className="h-full">
                 <button
                   onClick={() => document.getElementById("access-portal")?.scrollIntoView({ behavior: "smooth" })}
-                  className="w-full h-full text-left rounded-2xl p-6 flex flex-col gap-4 transition-all duration-200 hover:-translate-y-1"
+                  className="w-full h-full text-left rounded-2xl p-3 sm:p-6 flex flex-col gap-2 sm:gap-4 transition-all duration-200 hover:-translate-y-1"
                   style={{ background: "#FAFBFB", boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}>
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: accent + "18" }}>
-                    <Icon className="w-5 h-5" style={{ color: accent }} />
+                  <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center" style={{ background: accent + "18" }}>
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: accent }} />
                   </div>
                   <div>
-                    <div className="text-sm font-bold mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
-                    <p className="text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
+                    <div className="text-xs sm:text-sm font-bold mb-1 sm:mb-1.5" style={{ color: "#0A0A0A" }}>{title}</div>
+                    <p className="text-[11px] sm:text-xs leading-relaxed" style={{ color: G.textMuted }}>{desc}</p>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold mt-auto pt-2" style={{ color: accent }}>
+                  <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold mt-auto pt-2" style={{ color: accent }}>
                     View more <ArrowRight className="w-3 h-3" />
                   </div>
                 </button>
@@ -566,16 +566,16 @@ export default function Intro() {
               </button>
             </div>
           </Reveal>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {ANNOUNCEMENTS.map(({ date, tag, title, tagColor }, i) => (
               <Reveal key={title} delay={i * 80} className="h-full">
                 <GradientBox accent={tagColor} className="h-full">
-                  <div className="h-full rounded-2xl p-5 bg-white flex flex-col gap-3 hover:-translate-y-1 transition-all cursor-pointer"
+                  <div className="h-full rounded-2xl p-3 sm:p-5 bg-white flex flex-col gap-2 sm:gap-3 hover:-translate-y-1 transition-all cursor-pointer"
                     style={{ boxShadow: "0 2px 10px rgba(0,0,0,0.04)" }}>
-                    <span className="text-xs" style={{ color: G.textMuted }}>{date}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full w-fit"
+                    <span className="text-[11px] sm:text-xs" style={{ color: G.textMuted }}>{date}</span>
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 sm:px-2.5 py-1 rounded-full w-fit"
                       style={{ background: tagColor + "18", color: tagColor, border: `1px solid ${tagColor}30` }}>{tag}</span>
-                    <p className="text-sm font-semibold leading-snug" style={{ color: G.green }}>{title}</p>
+                    <p className="text-xs sm:text-sm font-semibold leading-snug" style={{ color: G.green }}>{title}</p>
                   </div>
                 </GradientBox>
               </Reveal>

@@ -202,10 +202,23 @@ export default function SmeAuth() {
 
           {/* Mobile back */}
           <button onClick={() => navigate("/")}
-            className="lg:hidden flex items-center gap-2 mb-8 text-sm"
+            className="lg:hidden flex items-center gap-2 mb-6 text-sm"
             style={{ color: C.textMuted }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
+
+          {/* Mobile brand header — the left panel above is hidden below lg */}
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `linear-gradient(160deg, ${C.green}, ${C.greenDark})` }}>
+              <ImageWithFallback src={sbpLogo} alt="SBP" className="w-9 h-9 object-contain"
+                style={{ filter: "brightness(0) invert(1)" }} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold" style={{ color: C.text }}>SME Applicant Portal</h2>
+              <p className="text-xs" style={{ color: C.textMuted }}>State Bank of Pakistan</p>
+            </div>
+          </div>
 
           {/* ── LOGIN ── */}
           {mode === "login" && (

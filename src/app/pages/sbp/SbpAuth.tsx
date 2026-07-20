@@ -90,10 +90,23 @@ export default function SbpAuth() {
       <div className="flex-1 flex items-center justify-center px-6 py-12" style={{ background: C.bg }}>
         <div className="w-full max-w-md">
           <button onClick={() => navigate("/")}
-            className="lg:hidden flex items-center gap-2 mb-8 text-sm"
+            className="lg:hidden flex items-center gap-2 mb-6 text-sm"
             style={{ color: C.textMuted }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
+
+          {/* Mobile brand header — the left panel above is hidden below lg */}
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(160deg, #3A1200, #1C0A00)" }}>
+              <ImageWithFallback src={sbpLogo} alt="SBP" className="w-9 h-9 object-contain"
+                style={{ filter: "brightness(0) invert(1)" }} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold" style={{ color: C.text }}>SBP Admin Portal</h2>
+              <p className="text-xs" style={{ color: C.textMuted }}>State Bank of Pakistan</p>
+            </div>
+          </div>
 
           {step === "credentials" ? (
             <div className="rounded-2xl border p-6 md:p-8" style={{ border: `1.5px solid ${C.border}`, background: C.surface }}>

@@ -190,10 +190,23 @@ export default function BusinessSetup() {
       {/* Right form */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-6 py-10">
-          <button onClick={() => navigate("/")} className="flex items-center gap-2 mb-8 text-sm"
+          <button onClick={() => navigate("/")} className="flex items-center gap-2 mb-6 text-sm"
             style={{ color: C.textMuted }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
+
+          {/* Mobile brand header — the left panel above is hidden below lg */}
+          <div className="lg:hidden flex items-center gap-3 mb-8">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `linear-gradient(160deg, ${C.green}, ${C.greenDark})` }}>
+              <ImageWithFallback src={sbpLogo} alt="SBP" className="w-9 h-9 object-contain"
+                style={{ filter: "brightness(0) invert(1)" }} />
+            </div>
+            <div>
+              <h2 className="text-base font-extrabold" style={{ color: C.text }}>Create Your Business Profile</h2>
+              <p className="text-xs" style={{ color: C.textMuted }}>State Bank of Pakistan</p>
+            </div>
+          </div>
 
           {/* Header */}
           <div className="mb-6 flex items-center gap-3">
