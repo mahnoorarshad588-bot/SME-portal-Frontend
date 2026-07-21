@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router";
+import { jsPDF } from "jspdf";
+import { useApp, type BankApplication } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import {
   FileText, Clock, CheckCircle2, XCircle, Banknote, Search, Filter,
   Eye, ChevronDown, ArrowRight, TrendingUp, AlertCircle, Download,
-  ClipboardCheck, BadgeCheck, ShieldCheck, MessageSquare,
-  Sparkles, Landmark, ListChecks,
+  ClipboardCheck, ShieldCheck, MessageSquare,
+  Sparkles, Landmark, ListChecks, X, Send, UploadCloud, Plus, Trash2, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 
 /* Minimal gradient-stroke border, matching the app's redesigned dashboard cards */
@@ -20,16 +22,7 @@ function GradientCard({ accent, className = "", children }: { accent: string; cl
   );
 }
 
-type OutletCtx = { activeKey: string };
-
-// ── shared sample data ──────────────────────────────────────────────────────
-const QUEUE = [
-  { id: "A001", caseId: "SBP-SME-2025-00142", business: "ABC Traders", scheme: "SAAF", amount: "PKR 8.5M", submitted: "Jun 12", status: "under_review", risk: "Low" },
-  { id: "A002", caseId: "SBP-SME-2025-00139", business: "Karachi Steel Works", scheme: "Tech Upgrade", amount: "PKR 22M", submitted: "Jun 10", status: "pending", risk: "Medium" },
-  { id: "A003", caseId: "SBP-SME-2025-00131", business: "Fresh Farm Exports", scheme: "Agri-SME", amount: "PKR 12M", submitted: "Jun 8", status: "pending", risk: "Low" },
-  { id: "A004", caseId: "SBP-SME-2025-00128", business: "TechSoft Solutions", scheme: "SAAF", amount: "PKR 6M", submitted: "Jun 5", status: "offer_issued", risk: "Low" },
-  { id: "A005", caseId: "SBP-SME-2025-00119", business: "Lahore Textile Mills", scheme: "Refinance", amount: "PKR 18M", submitted: "Jun 2", status: "approved", risk: "High" },
-];
+type OutletCtx = { activeKey: string; setActiveKey: (k: string) => void };
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: "Pending Review", color: C.textMuted, bg: "#F3F4F6" },
@@ -38,6 +31,16 @@ const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> =
   approved: { label: "Approved", color: C.green, bg: C.greenLight },
   rejected: { label: "Rejected", color: "#DC2626", bg: "#FEE2E2" },
   disbursed: { label: "Disbursed", color: C.greenDark, bg: C.greenLight },
+};
+
+// Statuses where assessment is still actionable — everything else is already resolved
+const ASSESSABLE_STATUSES = ["pending", "under_review"];
+
+const STATUS_RESOLUTION_NOTE: Record<string, string> = {
+  offer_issued: "A conditional offer has already been issued for this application.",
+  approved: "This application has already been approved.",
+  rejected: "This application has already been declined.",
+  disbursed: "Funds have already been disbursed for this application.",
 };
 
 function Badge({ status }: { status: string }) {
@@ -50,6 +53,7 @@ function Badge({ status }: { status: string }) {
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
 function Dashboard() {
+  const { bankApplications } = useApp();
   const STAT_CARDS = [
     { label: "Applications Received", value: "48", icon: FileText, color: C.blue, bg: C.blueLight, delta: "+12 this week" },
     { label: "Pending Assessment", value: "14", icon: Clock, color: "#D97706", bg: "#FEF3C7", delta: "3 overdue" },
@@ -124,7 +128,7 @@ function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {QUEUE.slice(0, 4).map(app => (
+                {bankApplications.slice(0, 4).map(app => (
                   <tr key={app.id} className="border-t hover:bg-gray-50 cursor-pointer" style={{ borderColor: C.border }}>
                     <td className="px-4 py-3 text-xs font-mono" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{app.caseId}</td>
                     <td className="px-4 py-3">
@@ -163,21 +167,194 @@ function Dashboard() {
   );
 }
 
+// ── Request More Info modal ──────────────────────────────────────────────────
+function RequestInfoModal({ business, caseId, onClose, onSubmit }: {
+  business: string; caseId: string; onClose: () => void; onSubmit: (type: "documents" | "info", messages: string[]) => void;
+}) {
+  const [requestType, setRequestType] = useState<"documents" | "info">("documents");
+  const [messages, setMessages] = useState<string[]>([""]);
+
+  const updateMessage = (i: number, value: string) =>
+    setMessages(list => list.map((m, idx) => idx === i ? value : m));
+  const addMessage = () => setMessages(list => [...list, ""]);
+  const removeMessage = (i: number) => setMessages(list => list.filter((_, idx) => idx !== i));
+
+  const isDocs = requestType === "documents";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
+      <div className="w-full max-w-lg rounded-2xl border max-h-[90vh] overflow-y-auto"
+        style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: C.orangeLight }}>
+              <MessageSquare className="w-4.5 h-4.5" style={{ color: C.orange }} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: C.text }}>Request More Information</h3>
+              <p className="text-xs" style={{ color: C.textMuted }}>{business} · {caseId}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: C.text }}>Request Type</label>
+            <div className="grid grid-cols-2 gap-2.5">
+              {([
+                { value: "documents" as const, label: "Request Documents" },
+                { value: "info" as const, label: "Request More Info" },
+              ]).map(opt => (
+                <label key={opt.value}
+                  className="flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer"
+                  style={{ border: `1.5px solid ${requestType === opt.value ? C.orange : C.border}`, background: requestType === opt.value ? C.orangeLight : C.bg }}>
+                  <input type="radio" name="requestType" className="accent-current" checked={requestType === opt.value}
+                    onChange={() => setRequestType(opt.value)} />
+                  <span className="text-sm font-medium" style={{ color: requestType === opt.value ? C.orange : C.text }}>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl p-3 flex gap-2.5" style={{ background: C.blueLight, border: `1.5px solid ${C.blue}20` }}>
+            <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.blue }} />
+            <p className="text-xs leading-relaxed" style={{ color: C.blue }}>
+              This sends a notification to the applicant on the SME Portal
+              {isDocs ? " asking them to upload the document(s) described below." : " with your message below."}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>
+              {isDocs ? "Document(s) Needed" : "Message to Applicant"}
+            </label>
+            <div className="space-y-2.5">
+              {messages.map((m, i) => (
+                <div key={i} className="relative">
+                  <textarea rows={3} value={m} onChange={e => updateMessage(i, e.target.value)}
+                    placeholder={
+                      i > 0 ? "Add another request..."
+                      : isDocs ? "Describe the document you need (e.g. latest bank statement, tax return)..."
+                      : "Describe what additional information is needed..."
+                    }
+                    className="w-full rounded-xl border text-sm outline-none resize-none"
+                    style={{ padding: "10px 36px 10px 12px", border: `1.5px solid ${C.border}`, background: C.bg, color: C.text }} />
+                  {messages.length > 1 && (
+                    <button type="button" onClick={() => removeMessage(i)}
+                      className="absolute top-2.5 right-2.5 p-1 rounded-lg hover:bg-red-50" style={{ color: "#DC2626" }}>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addMessage}
+              className="mt-2.5 flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.orange }}>
+              <Plus className="w-3.5 h-3.5" /> Add another
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-3 p-5 border-t" style={{ borderColor: C.border }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border"
+            style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+            Cancel
+          </button>
+          <button
+            disabled={messages.every(m => !m.trim())}
+            onClick={() => onSubmit(requestType, messages.filter(m => m.trim()))}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+            style={{ background: C.orange }}>
+            <Send className="w-4 h-4" /> Send Request
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Application Queue ────────────────────────────────────────────────────────
-function ApplicationQueue() {
-  const [selected, setSelected] = useState<(typeof QUEUE)[0] | null>(null);
+function ApplicationQueue({ statusFilter, title = "Application Queue" }: {
+  statusFilter?: string[]; title?: string;
+}) {
+  const { addNotification, bankApplications, updateBankApplicationStatus } = useApp();
+  const { setActiveKey } = useOutletContext<OutletCtx>();
+  const [selected, setSelected] = useState<BankApplication | null>(null);
   const [activeTab, setActiveTab] = useState("info");
   const [searchQ, setSearchQ] = useState("");
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
-  const filtered = QUEUE.filter(a =>
+  const scoped = statusFilter ? bankApplications.filter(a => statusFilter.includes(a.status)) : bankApplications;
+  const filtered = scoped.filter(a =>
     a.business.toLowerCase().includes(searchQ.toLowerCase()) ||
     a.caseId.toLowerCase().includes(searchQ.toLowerCase())
   );
+
+  const handleOfferResponse = (app: BankApplication, response: "accepted" | "rejected") => {
+    updateBankApplicationStatus(app.id, response === "accepted" ? "approved" : "rejected");
+  };
 
   const TABS = ["info", "ownership", "financing", "documents", "audit"];
   const TAB_LABELS: Record<string, string> = {
     info: "Business Information", ownership: "Ownership", financing: "Financing Details",
     documents: "Documents", audit: "Audit Trail",
+  };
+
+  const handleExport = () => {
+    if (!selected) return;
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFillColor(29, 78, 216);
+    doc.rect(0, 0, pageWidth, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("SBP SME Portal — Application Summary", 14, 17);
+
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(selected.business, 14, 42);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(selected.caseId, 14, 49);
+
+    const rows: [string, string][] = [
+      ["Financing Scheme", selected.scheme],
+      ["Requested Amount", selected.amount],
+      ["Submitted", selected.submitted],
+      ["Status", STATUS_CFG[selected.status]?.label ?? selected.status],
+      ["Risk Rating", selected.risk],
+    ];
+
+    let y = 62;
+    rows.forEach(([label, value], i) => {
+      if (i % 2 === 0) {
+        doc.setFillColor(247, 248, 250);
+        doc.rect(14, y - 6, pageWidth - 28, 10, "F");
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      doc.text(label, 18, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(20, 20, 20);
+      doc.text(String(value), 90, y);
+      y += 10;
+    });
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated ${new Date().toLocaleString()}`, 14, y + 10);
+
+    doc.save(`${selected.caseId}.pdf`);
   };
 
   return (
@@ -187,7 +364,7 @@ function ApplicationQueue() {
         style={{ background: C.surface, borderColor: C.border }}>
         <div className="p-4 border-b" style={{ borderColor: C.border }}>
           <div className="flex items-center gap-2 mb-3">
-            <h2 className="text-sm font-semibold flex-1" style={{ color: C.text }}>Application Queue</h2>
+            <h2 className="text-sm font-semibold flex-1" style={{ color: C.text }}>{title}</h2>
             <button className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
               <Filter className="w-4 h-4" />
             </button>
@@ -201,21 +378,42 @@ function ApplicationQueue() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto divide-y" style={{ borderColor: C.border }}>
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
+              <FileText className="w-8 h-8 opacity-20" style={{ color: C.textMuted }} />
+              <p className="text-xs" style={{ color: C.textMuted }}>No applications in this list right now</p>
+            </div>
+          )}
           {filtered.map(app => (
-            <button key={app.id}
-              onClick={() => setSelected(app)}
-              className="w-full text-left p-4 hover:bg-gray-50 transition-all"
-              style={{ background: selected?.id === app.id ? C.blueLight : undefined }}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <span className="text-xs font-semibold" style={{ color: C.text }}>{app.business}</span>
-                <Badge status={app.status} />
-              </div>
-              <div className="text-xs mb-1" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{app.caseId}</div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold" style={{ color: C.text }}>{app.amount}</span>
-                <span className="text-xs" style={{ color: C.textMuted }}>{app.submitted}</span>
-              </div>
-            </button>
+            <div key={app.id} style={{ background: selected?.id === app.id ? C.blueLight : undefined }}>
+              <button
+                onClick={() => { setSelected(app); setRequestSent(false); }}
+                className="w-full text-left p-4 hover:bg-gray-50 transition-all">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <span className="text-xs font-semibold" style={{ color: C.text }}>{app.business}</span>
+                  <Badge status={app.status} />
+                </div>
+                <div className="text-xs mb-1" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{app.caseId}</div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold" style={{ color: C.text }}>{app.amount}</span>
+                  <span className="text-xs" style={{ color: C.textMuted }}>{app.submitted}</span>
+                </div>
+              </button>
+              {app.status === "offer_issued" && (
+                <div className="flex gap-2 px-4 pb-3 -mt-1">
+                  <button onClick={() => handleOfferResponse(app, "accepted")}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border"
+                    style={{ border: `1.5px solid ${C.green}`, color: C.green }}>
+                    <ThumbsUp className="w-3 h-3" /> Accepted
+                  </button>
+                  <button onClick={() => handleOfferResponse(app, "rejected")}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border"
+                    style={{ border: "1.5px solid #DC2626", color: "#DC2626" }}>
+                    <ThumbsDown className="w-3 h-3" /> Rejected
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       </div>
@@ -236,16 +434,31 @@ function ApplicationQueue() {
                 <p className="text-xs mt-0.5" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{selected.caseId}</p>
               </div>
               <div className="flex gap-2">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
+                <button onClick={handleExport}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border"
                   style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
                   <Download className="w-3.5 h-3.5" /> Export
                 </button>
-                <button className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold text-white"
-                  style={{ background: C.blue }}>
-                  <ClipboardCheck className="w-3.5 h-3.5" /> Begin Assessment
-                </button>
+                {ASSESSABLE_STATUSES.includes(selected.status) ? (
+                  <button onClick={() => setActiveKey("reports")}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-semibold text-white"
+                    style={{ background: C.blue }}>
+                    <ClipboardCheck className="w-3.5 h-3.5" /> Begin Assessment
+                  </button>
+                ) : (
+                  <Badge status={selected.status} />
+                )}
               </div>
             </div>
+
+            {requestSent && (
+              <div className="mb-5 rounded-xl p-3 flex items-center gap-2.5" style={{ background: C.greenLight, border: `1.5px solid ${C.green}40` }}>
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: C.green }} />
+                <p className="text-xs font-medium" style={{ color: C.green }}>
+                  Request sent — the applicant has been notified on the SME Portal to upload the requested documents.
+                </p>
+              </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1 mb-5 border-b" style={{ borderColor: C.border }}>
@@ -338,37 +551,181 @@ function ApplicationQueue() {
             )}
 
             {/* Assessment actions */}
-            <div className="mt-6 pt-5 border-t flex gap-3" style={{ borderColor: C.border }}>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: C.green }}>
-                <BadgeCheck className="w-4 h-4" /> Approve
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border"
-                style={{ border: `1.5px solid ${C.orange}`, color: C.orange }}>
-                <MessageSquare className="w-4 h-4" /> Request Info
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border"
-                style={{ border: "1.5px solid #DC2626", color: "#DC2626" }}>
-                <XCircle className="w-4 h-4" /> Reject
-              </button>
-            </div>
+            {ASSESSABLE_STATUSES.includes(selected.status) ? (
+              <div className="mt-6 pt-5 border-t flex gap-3" style={{ borderColor: C.border }}>
+                <button onClick={() => setShowRequestModal(true)}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: C.orange }}>
+                  <MessageSquare className="w-4 h-4" /> Request more info
+                </button>
+                <button onClick={() => setActiveKey("reports")}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: C.blue }}>
+                  <ClipboardCheck className="w-4 h-4" /> Start assessment
+                </button>
+              </div>
+            ) : (
+              <div className="mt-6 pt-5 border-t flex items-center gap-3" style={{ borderColor: C.border }}>
+                <div className="rounded-xl p-3.5 flex items-center gap-2.5 w-full"
+                  style={{ background: STATUS_CFG[selected.status]?.bg, border: `1.5px solid ${STATUS_CFG[selected.status]?.color}40` }}>
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: STATUS_CFG[selected.status]?.color }} />
+                  <p className="text-xs font-medium" style={{ color: STATUS_CFG[selected.status]?.color }}>
+                    {STATUS_RESOLUTION_NOTE[selected.status] ?? `This application is currently ${STATUS_CFG[selected.status]?.label.toLowerCase()}.`}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {showRequestModal && selected && (
+        <RequestInfoModal
+          business={selected.business}
+          caseId={selected.caseId}
+          onClose={() => setShowRequestModal(false)}
+          onSubmit={(type, messages) => {
+            addNotification({
+              title: type === "documents" ? "Document Required" : "Information Requested",
+              desc: `${selected.business} — bank requested ${type === "documents" ? "document(s)" : "information"}: ${messages.map(m => `"${m}"`).join("; ")}`,
+              time: "Just now",
+              dot: C.orange,
+            });
+            setShowRequestModal(false);
+            setRequestSent(true);
+          }}
+        />
+      )}
     </div>
   );
 }
 
 // ── Credit Assessment ────────────────────────────────────────────────────────
-function CreditAssessment() {
-  const [submitted, setSubmitted] = useState(false);
+const RED = "#DC2626";
 
-  const CHECKS = [
-    { label: "Credit Bureau Result (eCIB)", value: "Clean · No defaults", status: "pass", note: "Score: 742/850" },
-    { label: "Risk Assessment Result", value: "Medium Risk", status: "warn", note: "Manufacturing sector exposure within limits" },
-    { label: "AML Screening Status", value: "Clear", status: "pass", note: "No match on OFAC / UN sanctions list" },
-    { label: "Due Diligence Status", value: "Completed", status: "pass", note: "Site visit conducted June 14, 2025" },
-  ];
+const CHECK_DEFS = [
+  {
+    key: "ecib", label: "Credit Bureau Result (eCIB)", note: "Score: 742/850",
+    options: [
+      { value: "Clean · No defaults", status: "pass" },
+      { value: "Minor Defaults", status: "warn" },
+      { value: "Defaults", status: "fail" },
+    ],
+  },
+  {
+    key: "risk", label: "Risk Assessment Result", note: "Manufacturing sector exposure within limits",
+    options: [
+      { value: "Low Risk", status: "pass" },
+      { value: "Medium Risk", status: "warn" },
+      { value: "High Risk", status: "fail" },
+    ],
+  },
+  {
+    key: "aml", label: "AML Screening Status", note: "No match on OFAC / UN sanctions list",
+    options: [
+      { value: "Clear", status: "pass" },
+      { value: "Under Review", status: "warn" },
+      { value: "Flagged", status: "fail" },
+    ],
+  },
+  {
+    key: "dd", label: "Due Diligence Status", note: "Site visit conducted June 14, 2025",
+    options: [
+      { value: "Completed", status: "pass" },
+      { value: "In Progress", status: "warn" },
+      { value: "Pending", status: "fail" },
+    ],
+  },
+] as const;
+
+// ── Upload Conditional Offer modal ───────────────────────────────────────────
+function UploadOfferModal({ business, caseId, onClose, onSubmit }: {
+  business: string; caseId: string; onClose: () => void; onSubmit: (file: File) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
+      <div className="w-full max-w-lg rounded-2xl border" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: C.greenLight }}>
+              <UploadCloud className="w-4.5 h-4.5" style={{ color: C.green }} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: C.text }}>Upload Conditional Offer</h3>
+              <p className="text-xs" style={{ color: C.textMuted }}>{business} · {caseId}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div className="rounded-xl p-3 flex gap-2.5" style={{ background: C.blueLight, border: `1.5px solid ${C.blue}20` }}>
+            <FileText className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.blue }} />
+            <p className="text-xs leading-relaxed" style={{ color: C.blue }}>
+              Upload the signed conditional offer letter. The applicant will be notified on the
+              SME Portal and can review it there to accept or decline.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2" style={{ color: C.text }}>Offer Document</label>
+            <label className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed py-8 cursor-pointer transition-all hover:bg-gray-50"
+              style={{ borderColor: file ? C.green : C.border }}>
+              <input type="file" accept=".pdf,.doc,.docx,image/*" className="hidden"
+                onChange={e => setFile(e.target.files?.[0] ?? null)} />
+              {file ? (
+                <>
+                  <CheckCircle2 className="w-6 h-6" style={{ color: C.green }} />
+                  <span className="text-sm font-semibold" style={{ color: C.text }}>{file.name}</span>
+                  <span className="text-xs" style={{ color: C.textMuted }}>Click to replace</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="w-6 h-6" style={{ color: C.textMuted }} />
+                  <span className="text-sm font-medium" style={{ color: C.text }}>Click to upload offer letter</span>
+                  <span className="text-xs" style={{ color: C.textMuted }}>PDF, DOC, or image</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
+        <div className="flex gap-3 p-5 border-t" style={{ borderColor: C.border }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border"
+            style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+            Cancel
+          </button>
+          <button
+            disabled={!file}
+            onClick={() => file && onSubmit(file)}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
+            style={{ background: C.green }}>
+            <Send className="w-4 h-4" /> Upload & Send to Applicant
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreditAssessment() {
+  const { addNotification, setOfferDocument } = useApp();
+  const [decision, setDecision] = useState<"accept" | "decline" | null>(null);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerSent, setOfferSent] = useState(false);
+  const [values, setValues] = useState<Record<string, string>>({
+    ecib: "Clean · No defaults",
+    risk: "Medium Risk",
+    aml: "Clear",
+    dd: "Completed",
+  });
+
+  const statusColor = (status: string) => status === "pass" ? C.green : status === "warn" ? "#D97706" : RED;
 
   return (
     <div className="px-6 py-6">
@@ -377,27 +734,45 @@ function CreditAssessment() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-3">
-          {CHECKS.map(({ label, value, status, note }) => (
-            <div key={label} className="rounded-xl p-4 border flex items-start gap-4"
-              style={{
-                background: status === "pass" ? C.greenLight : "#FEF3C7",
-                border: `1.5px solid ${status === "pass" ? C.green + "40" : "#D97706"}`,
-              }}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5`}
-                style={{ background: status === "pass" ? C.green : "#D97706" }}>
-                {status === "pass"
-                  ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  : <AlertCircle className="w-3.5 h-3.5 text-white" />}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold" style={{ color: C.text }}>{label}</span>
-                  <span className="text-xs font-bold" style={{ color: status === "pass" ? C.green : "#D97706" }}>{value}</span>
+          {CHECK_DEFS.map(({ key, label, note, options }) => {
+            const value = values[key];
+            const status = options.find(o => o.value === value)?.status ?? "pass";
+            const color = statusColor(status);
+            return (
+              <div key={key} className="rounded-xl p-4 border flex items-start gap-4"
+                style={{
+                  background: status === "pass" ? C.greenLight : status === "warn" ? "#FEF3C7" : "#FEE2E2",
+                  border: `1.5px solid ${color}${status === "pass" ? "40" : ""}`,
+                }}>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                  style={{ background: color }}>
+                  {status === "pass"
+                    ? <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    : <AlertCircle className="w-3.5 h-3.5 text-white" />}
                 </div>
-                <p className="text-xs mt-0.5" style={{ color: C.textMuted }}>{note}</p>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold" style={{ color: C.text }}>{label}</span>
+                    <div className="relative">
+                      <select
+                        value={value}
+                        onChange={e => setValues(v => ({ ...v, [key]: e.target.value }))}
+                        className="text-xs font-bold rounded-lg border outline-none appearance-none cursor-pointer"
+                        style={{ padding: "6px 28px 6px 10px", color, border: `1.5px solid ${color}`, background: C.surface }}
+                      >
+                        {options.map(o => (
+                          <option key={o.value} value={o.value}>{o.value}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                        style={{ color }} />
+                    </div>
+                  </div>
+                  <p className="text-xs mt-0.5" style={{ color: C.textMuted }}>{note}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="rounded-xl p-4 border" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
             <label className="block text-sm font-medium mb-2" style={{ color: C.text }}>Internal Remarks</label>
@@ -410,31 +785,89 @@ function CreditAssessment() {
         <div className="space-y-4">
           <div className="rounded-2xl border p-5" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
             <h3 className="text-sm font-bold mb-4" style={{ color: C.text }}>Assessment Decision</h3>
-            <div className="space-y-3">
-              <button onClick={() => setSubmitted(true)}
-                className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2"
-                style={{ background: C.green }}>
-                <BadgeCheck className="w-4 h-4" /> Approve & Generate Offer
-              </button>
-              <button className="w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2"
-                style={{ border: `1.5px solid ${C.orange}`, color: C.orange }}>
-                <MessageSquare className="w-4 h-4" /> Request More Information
-              </button>
-              <button className="w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2"
-                style={{ border: "1.5px solid #DC2626", color: "#DC2626" }}>
-                <XCircle className="w-4 h-4" /> Decline Application
-              </button>
-            </div>
+
+            {decision === null && (
+              <div className="space-y-3">
+                <button onClick={() => setDecision("accept")}
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2"
+                  style={{ background: C.green }}>
+                  <CheckCircle2 className="w-4 h-4" /> Accept
+                </button>
+                <button onClick={() => {
+                  setDecision("decline");
+                  addNotification({
+                    title: "Application Declined",
+                    desc: "HBL has declined the financing application for ABC Traders (SBP-SME-2025-00142).",
+                    time: "Just now",
+                    dot: "#DC2626",
+                  });
+                }}
+                  className="w-full py-3 rounded-xl text-sm font-semibold border flex items-center justify-center gap-2"
+                  style={{ border: "1.5px solid #DC2626", color: "#DC2626" }}>
+                  <XCircle className="w-4 h-4" /> Decline
+                </button>
+              </div>
+            )}
+
+            {decision === "accept" && !offerSent && (
+              <div className="space-y-2">
+                <button onClick={() => setShowOfferModal(true)}
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2"
+                  style={{ background: C.green }}>
+                  <UploadCloud className="w-4 h-4" /> Upload Conditional Offer
+                </button>
+                <button onClick={() => setDecision(null)} className="w-full text-xs py-1.5" style={{ color: C.textMuted }}>
+                  ← Change decision
+                </button>
+              </div>
+            )}
+
+            {decision === "decline" && (
+              <div className="rounded-xl p-4 text-center" style={{ background: "#FEE2E2", border: "1.5px solid #DC2626" }}>
+                <XCircle className="w-6 h-6 mx-auto mb-2" style={{ color: "#DC2626" }} />
+                <p className="text-sm font-bold" style={{ color: "#DC2626" }}>Application Declined</p>
+                <p className="text-xs mt-1" style={{ color: C.textMuted }}>The applicant will be notified of this decision.</p>
+                <button onClick={() => setDecision(null)} className="w-full text-xs mt-3" style={{ color: C.textMuted }}>
+                  ← Change decision
+                </button>
+              </div>
+            )}
           </div>
-          {submitted && (
+          {offerSent && (
             <div className="rounded-2xl p-4 text-center" style={{ background: C.greenLight, border: `1.5px solid ${C.green}` }}>
               <CheckCircle2 className="w-8 h-8 mx-auto mb-2" style={{ color: C.green }} />
-              <p className="text-sm font-bold" style={{ color: C.green }}>Assessment submitted!</p>
-              <p className="text-xs mt-1" style={{ color: C.textMuted }}>Offer generation form is now available.</p>
+              <p className="text-sm font-bold" style={{ color: C.green }}>Offer uploaded & sent!</p>
+              <p className="text-xs mt-1" style={{ color: C.textMuted }}>The applicant can now view and accept the offer on the SME Portal.</p>
             </div>
           )}
         </div>
       </div>
+
+      {showOfferModal && (
+        <UploadOfferModal
+          business="ABC Traders"
+          caseId="SBP-SME-2025-00142"
+          onClose={() => setShowOfferModal(false)}
+          onSubmit={file => {
+            setOfferDocument({
+              fileName: file.name,
+              fileUrl: URL.createObjectURL(file),
+              business: "ABC Traders",
+              caseId: "SBP-SME-2025-00142",
+              bank: "HBL",
+              uploadedAt: "Just now",
+            });
+            addNotification({
+              title: "Offer Received",
+              desc: `HBL has issued a conditional offer for ABC Traders — "${file.name}". Review and accept it now.`,
+              time: "Just now",
+              dot: C.green,
+            });
+            setShowOfferModal(false);
+            setOfferSent(true);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -489,72 +922,18 @@ function ConditionalOffer() {
   );
 }
 
-// ── Disbursement ─────────────────────────────────────────────────────────────
-function Disbursement() {
-  return (
-    <div className="px-6 py-6">
-      <h1 className="text-xl font-bold mb-1" style={{ color: C.text }}>Disbursement</h1>
-      <p className="text-sm mb-6" style={{ color: C.textMuted }}>Process financing disbursement for approved applications</p>
-
-      <div className="max-w-lg rounded-2xl border p-6" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
-        <div className="space-y-4">
-          {[
-            { label: "Case ID", ph: "SBP-SME-2025-00098" },
-            { label: "Disbursement Amount (PKR)", ph: "8,000,000" },
-            { label: "Account Number / IBAN", ph: "PK36HABB0000949473010010" },
-          ].map(({ label, ph }) => (
-            <div key={label}>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>{label}</label>
-              <input type="text" placeholder={ph}
-                className="w-full rounded-xl border text-sm outline-none"
-                style={{ padding: "11px 14px", background: C.bg, border: `1.5px solid ${C.border}`, color: C.text, fontFamily: label.includes("IBAN") || label === "Case ID" ? "var(--font-mono)" : undefined }} />
-            </div>
-          ))}
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Value Date</label>
-            <input type="date" className="w-full rounded-xl border text-sm outline-none"
-              style={{ padding: "11px 14px", background: C.bg, border: `1.5px solid ${C.border}`, color: C.text }} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Disbursement Status</label>
-            <div className="relative">
-              <select className="w-full rounded-xl border text-sm outline-none appearance-none"
-                style={{ padding: "11px 36px 11px 14px", background: C.bg, border: `1.5px solid ${C.border}`, color: C.text }}>
-                <option>Pending</option>
-                <option>Processing</option>
-                <option>Completed</option>
-                <option>Failed</option>
-              </select>
-              <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: C.textMuted }} />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-5 pt-5 border-t" style={{ borderColor: C.border }}>
-          <button className="flex-1 py-3 rounded-xl text-sm font-semibold text-white" style={{ background: C.green }}>
-            Process Disbursement
-          </button>
-          <button className="flex-1 py-3 rounded-xl text-sm font-semibold border" style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
-            Save Draft
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Main export ──────────────────────────────────────────────────────────────
 export default function BankPortal() {
   const { activeKey } = useOutletContext<OutletCtx>();
 
   switch (activeKey) {
-    case "queue":
-    case "assessment":
-    case "offers":
-    case "pending": return <ApplicationQueue />;
+    case "queue": return <ApplicationQueue key="queue" />;
+    case "assessment": return <ApplicationQueue key="assessment" statusFilter={["under_review"]} title="Under Assessment" />;
+    case "offers": return <ApplicationQueue key="offers" statusFilter={["offer_issued"]} title="Offers Issued" />;
+    case "offers_accepted": return <ApplicationQueue key="offers_accepted" statusFilter={["approved"]} title="Offers Accepted by Applicant" />;
+    case "offers_rejected": return <ApplicationQueue key="offers_rejected" statusFilter={["rejected"]} title="Offers Rejected by Applicant" />;
     case "reports": return <CreditAssessment />;
-    case "disbursed": return <Disbursement />;
     default: return <Dashboard />;
   }
 }

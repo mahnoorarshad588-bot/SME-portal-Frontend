@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useApp } from "../../context/AppContext";
 import { C } from "../../constants/colors";
-import { ArrowLeft, CheckCircle2, X, FileText, AlertTriangle, Download } from "lucide-react";
+import { ArrowLeft, CheckCircle2, X, FileText, AlertTriangle, Download, Paperclip } from "lucide-react";
 
 export default function OfferLetter() {
   const navigate = useNavigate();
+  const { offerDocument } = useApp();
   const [decision, setDecision] = useState<"accept" | "reject" | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -50,6 +52,21 @@ export default function OfferLetter() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Offer details */}
         <div className="lg:col-span-2 space-y-4">
+          {offerDocument && (
+            <a href={offerDocument.fileUrl} target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-xl p-3.5 transition-all hover:opacity-90"
+              style={{ background: C.greenLight, border: `1.5px solid ${C.green}40` }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.green }}>
+                <Paperclip className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold" style={{ color: C.green }}>Offer document from {offerDocument.bank}</p>
+                <p className="text-xs truncate" style={{ color: C.textMuted }}>{offerDocument.fileName}</p>
+              </div>
+              <Download className="w-4 h-4 flex-shrink-0" style={{ color: C.green }} />
+            </a>
+          )}
+
           {/* Offer header card */}
           <div className="rounded-2xl overflow-hidden" style={{ border: `1.5px solid ${C.green}` }}>
             <div className="px-5 py-3 flex items-center justify-between"

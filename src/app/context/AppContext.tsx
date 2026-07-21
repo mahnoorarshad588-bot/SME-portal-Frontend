@@ -38,6 +38,35 @@ export interface Application {
   stage: number;
 }
 
+export interface Notification {
+  id: string;
+  title: string;
+  desc: string;
+  time: string;
+  dot: string;
+  read: boolean;
+}
+
+export interface OfferDocument {
+  fileName: string;
+  fileUrl: string;
+  business: string;
+  caseId: string;
+  bank: string;
+  uploadedAt: string;
+}
+
+export interface BankApplication {
+  id: string;
+  caseId: string;
+  business: string;
+  scheme: string;
+  amount: string;
+  status: string;
+  submitted: string;
+  risk: string;
+}
+
 interface AppState {
   role: Role;
   setRole: (r: Role) => void;
@@ -50,6 +79,13 @@ interface AppState {
   applications: Application[];
   selectedApplication: Application | null;
   setSelectedApplication: (a: Application | null) => void;
+  notifications: Notification[];
+  addNotification: (n: Omit<Notification, "id" | "read">) => void;
+  markNotificationsRead: () => void;
+  offerDocument: OfferDocument | null;
+  setOfferDocument: (o: OfferDocument | null) => void;
+  bankApplications: BankApplication[];
+  updateBankApplicationStatus: (id: string, status: string) => void;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -79,6 +115,20 @@ const SAMPLE_APPS: Application[] = [
   { id: "a4", caseId: "SBP-SME-2025-00183", businessName: "XYZ Foods Pvt. Ltd.", scheme: "SME Asaan Finance (SAAF)", amount: "PKR 5,000,000", status: "draft", bank: "—", submittedDate: "—", stage: 0 },
 ];
 
+const SAMPLE_BANK_APPLICATIONS: BankApplication[] = [
+  { id: "A001", caseId: "SBP-SME-2025-00142", business: "ABC Traders", scheme: "SAAF", amount: "PKR 8.5M", submitted: "Jun 12", status: "under_review", risk: "Low" },
+  { id: "A002", caseId: "SBP-SME-2025-00139", business: "Karachi Steel Works", scheme: "Tech Upgrade", amount: "PKR 22M", submitted: "Jun 10", status: "pending", risk: "Medium" },
+  { id: "A003", caseId: "SBP-SME-2025-00131", business: "Fresh Farm Exports", scheme: "Agri-SME", amount: "PKR 12M", submitted: "Jun 8", status: "pending", risk: "Low" },
+  { id: "A004", caseId: "SBP-SME-2025-00128", business: "TechSoft Solutions", scheme: "SAAF", amount: "PKR 6M", submitted: "Jun 5", status: "offer_issued", risk: "Low" },
+  { id: "A005", caseId: "SBP-SME-2025-00119", business: "Lahore Textile Mills", scheme: "Refinance", amount: "PKR 18M", submitted: "Jun 2", status: "approved", risk: "High" },
+];
+
+const SAMPLE_NOTIFICATIONS: Notification[] = [
+  { id: "n1", title: "Application Under Review", desc: "SBP-SME-2025-00142 is being reviewed by HBL", time: "2h ago", dot: "#2563EB", read: false },
+  { id: "n2", title: "Offer Received", desc: "MCB Bank has issued a conditional offer for XYZ Foods", time: "Yesterday", dot: "#006838", read: false },
+  { id: "n3", title: "Document Required", desc: "Additional documents requested for ABC Traders application", time: "2 days ago", dot: "#EA580C", read: false },
+];
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>(null);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
@@ -86,10 +136,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [selectedBusiness, setSelectedBusiness] = useState<Business>(SAMPLE_BUSINESSES[0]);
   const [applications] = useState<Application[]>(SAMPLE_APPS);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS);
+  const [offerDocument, setOfferDocument] = useState<OfferDocument | null>(null);
+  const [bankApplications, setBankApplications] = useState<BankApplication[]>(SAMPLE_BANK_APPLICATIONS);
 
   const addBusiness = (b: Business) => {
     setBusinesses(prev => [...prev, b]);
     setSelectedBusiness(b);
+  };
+
+  const addNotification = (n: Omit<Notification, "id" | "read">) => {
+    setNotifications(prev => [{ ...n, id: `n${Date.now()}`, read: false }, ...prev]);
+  };
+
+  const markNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const updateBankApplicationStatus = (id: string, status: string) => {
+    setBankApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
   };
 
   return (
@@ -98,6 +163,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       user, setUser,
       businesses, selectedBusiness, setSelectedBusiness, addBusiness,
       applications, selectedApplication, setSelectedApplication,
+      notifications, addNotification, markNotificationsRead,
+      offerDocument, setOfferDocument,
+      bankApplications, updateBankApplicationStatus,
     }}>
       {children}
     </AppContext.Provider>

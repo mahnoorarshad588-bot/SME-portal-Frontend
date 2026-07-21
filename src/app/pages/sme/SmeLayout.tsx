@@ -21,7 +21,8 @@ const NAV = [
 export default function SmeLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, businesses, selectedBusiness, setSelectedBusiness } = useApp();
+  const { user, businesses, selectedBusiness, setSelectedBusiness, notifications, markNotificationsRead } = useApp();
+  const unreadCount = notifications.filter(n => !n.read).length;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bizDropdown, setBizDropdown] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -192,11 +193,13 @@ export default function SmeLayout() {
 
           {/* Notifications */}
           <div className="relative flex-shrink-0 ml-auto md:ml-0">
-            <button onClick={() => setNotifOpen(!notifOpen)}
+            <button onClick={() => { setNotifOpen(!notifOpen); if (!notifOpen) markNotificationsRead(); }}
               className="relative p-2 rounded-lg hover:bg-gray-100 transition-all"
               style={{ color: C.textMuted }}>
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: C.orange }} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full" style={{ background: C.orange }} />
+              )}
             </button>
             {notifOpen && (
               <div className="absolute right-0 top-full mt-1 w-72 max-w-[90vw] rounded-xl border shadow-lg z-10"
@@ -204,26 +207,28 @@ export default function SmeLayout() {
                 <div className="px-4 py-3 border-b flex items-center justify-between"
                   style={{ borderColor: C.border }}>
                   <span className="text-sm font-semibold" style={{ color: C.text }}>Notifications</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                    style={{ background: C.orangeLight, color: C.orange }}>3 New</span>
+                  {unreadCount > 0 && (
+                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                      style={{ background: C.orangeLight, color: C.orange }}>{unreadCount} New</span>
+                  )}
                 </div>
-                {[
-                  { title: "Application Under Review", desc: "SBP-SME-2025-00142 is being reviewed by HBL", time: "2h ago", dot: C.blue },
-                  { title: "Offer Received", desc: "MCB Bank has issued a conditional offer for XYZ Foods", time: "Yesterday", dot: C.green },
-                  { title: "Document Required", desc: "Additional documents requested for ABC Traders application", time: "2 days ago", dot: C.orange },
-                ].map(({ title, desc, time, dot }) => (
-                  <div key={title} className="px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
-                    style={{ borderColor: C.border }}>
-                    <div className="flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: dot }} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold" style={{ color: C.text }}>{title}</p>
-                        <p className="text-xs leading-snug mt-0.5" style={{ color: C.textMuted }}>{desc}</p>
-                        <p className="text-xs mt-1" style={{ color: C.textMuted, fontSize: "10px" }}>{time}</p>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-xs text-center" style={{ color: C.textMuted }}>No notifications yet</p>
+                  ) : notifications.map(({ id, title, desc, time, dot, read }) => (
+                    <div key={id} className="px-4 py-3 border-b hover:bg-gray-50 cursor-pointer"
+                      style={{ borderColor: C.border, background: read ? "transparent" : C.blueLight }}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: dot }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold" style={{ color: C.text }}>{title}</p>
+                          <p className="text-xs leading-snug mt-0.5" style={{ color: C.textMuted }}>{desc}</p>
+                          <p className="text-xs mt-1" style={{ color: C.textMuted, fontSize: "10px" }}>{time}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>

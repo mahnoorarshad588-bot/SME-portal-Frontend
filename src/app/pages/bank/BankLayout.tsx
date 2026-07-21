@@ -5,9 +5,9 @@ import sbpLogo from "@/imports/state_bank_of_pakistan_logo-1.png";
 import { useApp } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import {
-  LayoutDashboard, FileText, ClipboardCheck, BadgeDollarSign,
-  BarChart2, Bell, LogOut, Settings, Menu, CheckCircle2,
-  Clock, TrendingUp,
+  LayoutDashboard, FileText, ClipboardCheck,
+  Bell, LogOut, Settings, Menu, CheckCircle2,
+  X, User as UserIcon, Mail, ThumbsUp, ThumbsDown,
 } from "lucide-react";
 
 const NAV = [
@@ -15,16 +15,105 @@ const NAV = [
   { label: "Application Queue", icon: FileText, key: "queue" },
   { label: "Under Assessment", icon: ClipboardCheck, key: "assessment" },
   { label: "Offers Issued", icon: CheckCircle2, key: "offers" },
-  { label: "Pending Disbursement", icon: Clock, key: "pending" },
-  { label: "Disbursements", icon: BadgeDollarSign, key: "disbursed" },
-  { label: "Reports", icon: BarChart2, key: "reports" },
+  { label: "Offers Accepted by Applicant", icon: ThumbsUp, key: "offers_accepted" },
+  { label: "Offers Rejected by Applicant", icon: ThumbsDown, key: "offers_rejected" },
 ];
+
+// Pages reachable only via in-context actions (e.g. "Start assessment"), not a sidebar item
+const HIDDEN_PAGE_TITLES: Record<string, string> = {
+  reports: "Credit Assessment",
+};
+
+function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { user, setUser } = useApp();
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyApp, setNotifyApp] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setUser({ name: name.trim() || "Bank Officer", email: email.trim() });
+    setSaved(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
+      <div className="w-full max-w-md rounded-2xl border" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: C.blueLight }}>
+              <Settings className="w-4.5 h-4.5" style={{ color: C.blue }} />
+            </div>
+            <h3 className="text-sm font-bold" style={{ color: C.text }}>Account Settings</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Full Name</label>
+            <div className="relative">
+              <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textMuted }} />
+              <input type="text" value={name} onChange={e => { setName(e.target.value); setSaved(false); }}
+                className="w-full rounded-xl border text-sm outline-none"
+                style={{ padding: "10px 12px 10px 38px", border: `1.5px solid ${C.border}`, background: C.bg, color: C.text }} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textMuted }} />
+              <input type="email" value={email} onChange={e => { setEmail(e.target.value); setSaved(false); }}
+                className="w-full rounded-xl border text-sm outline-none"
+                style={{ padding: "10px 12px 10px 38px", border: `1.5px solid ${C.border}`, background: C.bg, color: C.text }} />
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <label className="flex items-center justify-between p-2.5 rounded-xl border cursor-pointer" style={{ border: `1.5px solid ${C.border}` }}>
+              <span className="text-sm" style={{ color: C.text }}>Email notifications</span>
+              <input type="checkbox" className="rounded" checked={notifyEmail} onChange={() => { setNotifyEmail(v => !v); setSaved(false); }} />
+            </label>
+            <label className="flex items-center justify-between p-2.5 rounded-xl border cursor-pointer" style={{ border: `1.5px solid ${C.border}` }}>
+              <span className="text-sm" style={{ color: C.text }}>In-app notifications</span>
+              <input type="checkbox" className="rounded" checked={notifyApp} onChange={() => { setNotifyApp(v => !v); setSaved(false); }} />
+            </label>
+          </div>
+
+          {saved && (
+            <div className="rounded-xl p-3 flex gap-2.5" style={{ background: C.greenLight, border: `1.5px solid ${C.green}` }}>
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.green }} />
+              <p className="text-xs leading-relaxed" style={{ color: C.green }}>Settings saved.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 p-5 border-t" style={{ borderColor: C.border }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border"
+            style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+            Close
+          </button>
+          <button onClick={handleSave}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: C.blue }}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function BankLayout() {
   const navigate = useNavigate();
   const { user } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeKey, setActiveKey] = useState("dashboard");
+  const [showSettings, setShowSettings] = useState(false);
 
   const sidebar = (
     <div className="flex flex-col h-full"
@@ -84,7 +173,9 @@ export default function BankLayout() {
             <div className="text-xs font-semibold truncate" style={{ color: C.text }}>{user?.name ?? "Bank Officer"}</div>
             <div className="text-xs truncate" style={{ fontSize: "10px", color: C.textMuted }}>{user?.email ?? ""}</div>
           </div>
-          <Settings className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.textMuted }} />
+          <button onClick={() => setShowSettings(true)} className="p-1 rounded-lg hover:bg-gray-100 flex-shrink-0">
+            <Settings className="w-3.5 h-3.5" style={{ color: C.textMuted }} />
+          </button>
         </div>
       </div>
     </div>
@@ -112,7 +203,7 @@ export default function BankLayout() {
 
           <div className="flex-1">
             <div className="text-sm font-semibold capitalize" style={{ color: C.text }}>
-              {NAV.find(n => n.key === activeKey)?.label ?? "Dashboard"}
+              {NAV.find(n => n.key === activeKey)?.label ?? HIDDEN_PAGE_TITLES[activeKey] ?? "Dashboard"}
             </div>
           </div>
 
@@ -133,9 +224,11 @@ export default function BankLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <Outlet context={{ activeKey }} />
+          <Outlet context={{ activeKey, setActiveKey }} />
         </main>
       </div>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }
