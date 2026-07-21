@@ -67,6 +67,12 @@ export interface BankApplication {
   risk: string;
 }
 
+export interface ApplicationDoc {
+  label: string;
+  fileName: string;
+  fileUrl: string;
+}
+
 interface AppState {
   role: Role;
   setRole: (r: Role) => void;
@@ -79,6 +85,8 @@ interface AppState {
   applications: Application[];
   selectedApplication: Application | null;
   setSelectedApplication: (a: Application | null) => void;
+  addApplication: (a: { businessName: string; scheme: string; amount: string; bank: string; documents?: ApplicationDoc[] }) => string;
+  applicationDocuments: Record<string, ApplicationDoc[]>;
   notifications: Notification[];
   addNotification: (n: Omit<Notification, "id" | "read">) => void;
   markNotificationsRead: () => void;
@@ -134,15 +142,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>(SAMPLE_BUSINESSES);
   const [selectedBusiness, setSelectedBusiness] = useState<Business>(SAMPLE_BUSINESSES[0]);
-  const [applications] = useState<Application[]>(SAMPLE_APPS);
+  const [applications, setApplications] = useState<Application[]>(SAMPLE_APPS);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS);
   const [offerDocument, setOfferDocument] = useState<OfferDocument | null>(null);
   const [bankApplications, setBankApplications] = useState<BankApplication[]>(SAMPLE_BANK_APPLICATIONS);
+  const [applicationDocuments, setApplicationDocuments] = useState<Record<string, ApplicationDoc[]>>({});
 
   const addBusiness = (b: Business) => {
     setBusinesses(prev => [...prev, b]);
     setSelectedBusiness(b);
+  };
+
+  const addApplication = (a: { businessName: string; scheme: string; amount: string; bank: string; documents?: ApplicationDoc[] }) => {
+    const now = new Date();
+    const caseId = `SBP-SME-${now.getFullYear()}-${String(Math.floor(Math.random() * 90000) + 10000)}`;
+    const id = `a${Date.now()}`;
+    const isoDate = now.toISOString().slice(0, 10);
+    const shortDate = now.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    setApplications(prev => [
+      { id, caseId, businessName: a.businessName, scheme: a.scheme, amount: a.amount, status: "submitted", bank: a.bank, submittedDate: isoDate, stage: 1 },
+      ...prev,
+    ]);
+    setBankApplications(prev => [
+      { id, caseId, business: a.businessName, scheme: a.scheme, amount: a.amount, status: "pending", submitted: shortDate, risk: "Low" },
+      ...prev,
+    ]);
+    if (a.documents?.length) {
+      setApplicationDocuments(prev => ({ ...prev, [id]: a.documents! }));
+    }
+
+    return caseId;
   };
 
   const addNotification = (n: Omit<Notification, "id" | "read">) => {
@@ -162,7 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       role, setRole,
       user, setUser,
       businesses, selectedBusiness, setSelectedBusiness, addBusiness,
-      applications, selectedApplication, setSelectedApplication,
+      applications, selectedApplication, setSelectedApplication, addApplication, applicationDocuments,
       notifications, addNotification, markNotificationsRead,
       offerDocument, setOfferDocument,
       bankApplications, updateBankApplicationStatus,

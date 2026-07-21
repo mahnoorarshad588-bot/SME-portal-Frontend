@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router";
 import { jsPDF } from "jspdf";
 import { useApp, type BankApplication } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import {
   FileText, Clock, CheckCircle2, XCircle, Banknote, Search, Filter,
-  Eye, ChevronDown, ArrowRight, TrendingUp, AlertCircle, Download,
+  Eye, ChevronDown, ArrowRight, ArrowLeft, TrendingUp, AlertCircle, Download,
   ClipboardCheck, ShieldCheck, MessageSquare,
-  Sparkles, Landmark, ListChecks, X, Send, UploadCloud, Plus, Trash2, ThumbsUp, ThumbsDown,
+  Sparkles, Landmark, ListChecks, X, Send, UploadCloud, Plus, Trash2,
+  PieChart, BarChart3,
 } from "lucide-react";
 
 /* Minimal gradient-stroke border, matching the app's redesigned dashboard cards */
@@ -22,7 +23,10 @@ function GradientCard({ accent, className = "", children }: { accent: string; cl
   );
 }
 
-type OutletCtx = { activeKey: string; setActiveKey: (k: string) => void };
+type OutletCtx = {
+  activeKey: string; setActiveKey: (k: string) => void;
+  focusApplicationId: string | null; setFocusApplicationId: (id: string | null) => void;
+};
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
   pending: { label: "Pending Review", color: C.textMuted, bg: "#F3F4F6" },
@@ -52,8 +56,23 @@ function Badge({ status }: { status: string }) {
 }
 
 // ── Dashboard ───────────────────────────────────────────────────────────────
+const MONTHLY_TREND = [
+  { month: "Jan", value: 28 },
+  { month: "Feb", value: 34 },
+  { month: "Mar", value: 31 },
+  { month: "Apr", value: 42 },
+  { month: "May", value: 39 },
+  { month: "Jun", value: 48 },
+];
+
 function Dashboard() {
   const { bankApplications } = useApp();
+  const { setActiveKey, setFocusApplicationId } = useOutletContext<OutletCtx>();
+
+  const openForReview = (id: string) => {
+    setFocusApplicationId(id);
+    setActiveKey("queue");
+  };
   const STAT_CARDS = [
     { label: "Applications Received", value: "48", icon: FileText, color: C.blue, bg: C.blueLight, delta: "+12 this week" },
     { label: "Pending Assessment", value: "14", icon: Clock, color: "#D97706", bg: "#FEF3C7", delta: "3 overdue" },
@@ -61,6 +80,33 @@ function Dashboard() {
     { label: "Rejected", value: "8", icon: XCircle, color: "#DC2626", bg: "#FEE2E2", delta: "" },
     { label: "Disbursed", value: "12", icon: Banknote, color: C.greenDark, bg: C.greenLight, delta: "PKR 86M total" },
   ];
+
+  // Part-to-whole composition of the bank's queue by status.
+  // Single sequential hue (opacity-stepped): the app's per-status colors fail a
+  // colorblind-safety check when placed as adjacent chart segments, so identity
+  // here rides on the always-visible legend labels, not hue alone.
+  const totalApps = Math.max(1, bankApplications.length);
+  const statusCount = (s: string) => bankApplications.filter(a => a.status === s).length;
+  const STATUS_COMPOSITION = [
+    { name: "Pending Review", value: statusCount("pending"), opacity: 0.3 },
+    { name: "Under Review", value: statusCount("under_review"), opacity: 0.48 },
+    { name: "Offer Issued", value: statusCount("offer_issued"), opacity: 0.64 },
+    { name: "Approved", value: statusCount("approved"), opacity: 0.8 },
+    { name: "Rejected", value: statusCount("rejected"), opacity: 1 },
+  ].filter(d => d.value > 0);
+
+  // Categorical green/blue/orange triple — validated colorblind-safe as a
+  // 3-slot set (node scripts/validate_palette.js, all checks PASS). Red was
+  // tried alongside green/orange here too but fails CVD separation (ΔE 2.4
+  // protan) and the normal-vision floor, so it's kept out of this chart.
+  const riskCount = (r: string) => bankApplications.filter(a => a.risk === r).length;
+  const RISK_COMPOSITION = [
+    { name: "Low Risk", value: riskCount("Low"), color: C.green },
+    { name: "Medium Risk", value: riskCount("Medium"), color: C.orange },
+    { name: "High Risk", value: riskCount("High"), color: C.blue },
+  ].filter(d => d.value > 0);
+
+  const trendMax = Math.max(...MONTHLY_TREND.map(d => d.value));
 
   return (
     <div className="px-6 py-6" style={{ fontFamily: "'Manrope', sans-serif" }}>
@@ -105,64 +151,185 @@ function Dashboard() {
         ))}
       </div>
 
-      {/* Recent applications */}
-      <GradientCard accent={C.blue}>
-        <div className="rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: C.border }}>
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.blueLight }}>
-                <ListChecks className="w-3.5 h-3.5" style={{ color: C.blue }} />
+      {/* Two-column layout: table + charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Recent applications — 2/3 width */}
+        <GradientCard accent={C.blue} className="lg:col-span-2">
+          <div className="rounded-2xl overflow-hidden">
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ borderColor: C.border }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.blueLight }}>
+                  <ListChecks className="w-3.5 h-3.5" style={{ color: C.blue }} />
+                </div>
+                <h2 className="text-sm font-bold" style={{ color: C.text }}>Recent Applications</h2>
               </div>
-              <h2 className="text-sm font-bold" style={{ color: C.text }}>Recent Applications</h2>
+              <button onClick={() => setActiveKey("queue")}
+                className="text-xs font-bold flex items-center gap-1 hover:opacity-80" style={{ color: C.blue }}>
+                View All Queue <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
-            <span className="text-xs font-bold flex items-center gap-1" style={{ color: C.blue }}>View All Queue <ArrowRight className="w-3 h-3" /></span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ background: C.bg }}>
-                  {["Case ID", "Business", "Scheme", "Amount", "Submitted", "Status", "Risk", ""].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide"
-                      style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {bankApplications.slice(0, 4).map(app => (
-                  <tr key={app.id} className="border-t hover:bg-gray-50 cursor-pointer" style={{ borderColor: C.border }}>
-                    <td className="px-4 py-3 text-xs font-mono" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{app.caseId}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
-                          style={{ background: C.blue }}>
-                          {app.business[0]}
-                        </div>
-                        <span className="text-xs font-semibold" style={{ color: C.text }}>{app.business}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs" style={{ color: C.textMuted }}>{app.scheme}</td>
-                    <td className="px-4 py-3 text-xs font-bold" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{app.amount}</td>
-                    <td className="px-4 py-3 text-xs" style={{ color: C.textMuted }}>{app.submitted}</td>
-                    <td className="px-4 py-3"><Badge status={app.status} /></td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                        style={{
-                          background: app.risk === "Low" ? C.greenLight : app.risk === "Medium" ? "#FEF3C7" : "#FEE2E2",
-                          color: app.risk === "Low" ? C.green : app.risk === "Medium" ? "#D97706" : "#DC2626",
-                        }}>{app.risk}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr style={{ background: C.bg }}>
+                    {["Case ID", "Business", "Scheme", "Amount", "Submitted", "Status", "Risk", ""].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide"
+                        style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bankApplications.slice(0, 4).map(app => {
+                    const isNew = app.status === "pending";
+                    return (
+                      <tr key={app.id} onClick={() => openForReview(app.id)}
+                        className="border-t hover:bg-gray-50 cursor-pointer transition-colors"
+                        style={{ borderColor: C.border, background: isNew ? "#FEF2F2" : undefined, borderLeft: isNew ? "3px solid #DC2626" : "3px solid transparent" }}>
+                        <td className="px-4 py-3 text-xs font-mono" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{app.caseId}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
+                              style={{ background: C.blue }}>
+                              {app.business[0]}
+                            </div>
+                            <span className="text-xs font-semibold" style={{ color: C.text }}>{app.business}</span>
+                            {isNew && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#DC2626" }}>
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs" style={{ color: C.textMuted }}>{app.scheme}</td>
+                        <td className="px-4 py-3 text-xs font-bold" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{app.amount}</td>
+                        <td className="px-4 py-3 text-xs" style={{ color: C.textMuted }}>{app.submitted}</td>
+                        <td className="px-4 py-3"><Badge status={app.status} /></td>
+                        <td className="px-4 py-3">
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{
+                              background: app.risk === "Low" ? C.greenLight : app.risk === "Medium" ? "#FEF3C7" : "#FEE2E2",
+                              color: app.risk === "Low" ? C.green : app.risk === "Medium" ? "#D97706" : "#DC2626",
+                            }}>{app.risk}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={e => { e.stopPropagation(); openForReview(app.id); }}
+                            className="p-1.5 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
+        </GradientCard>
+
+        {/* Right column — charts */}
+        <div className="space-y-4">
+
+          {/* Monthly trend */}
+          <GradientCard accent={C.blue}>
+            <div className="p-3.5 sm:p-5">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.blueLight }}>
+                  <BarChart3 className="w-3.5 h-3.5" style={{ color: C.blue }} />
+                </div>
+                <h2 className="text-sm font-bold" style={{ color: C.text }}>Monthly Applications</h2>
+              </div>
+              <div className="flex items-end justify-between gap-2" style={{ height: "104px" }}>
+                {MONTHLY_TREND.map(d => (
+                  <div key={d.month} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5">
+                    <span className="text-xs font-bold" style={{ color: C.text, fontFamily: "var(--font-mono)" }}>{d.value}</span>
+                    <div className="w-full rounded-t-md transition-all"
+                      style={{ height: `${(d.value / trendMax) * 100}%`, background: C.blue, minHeight: "4px" }}
+                      title={`${d.month}: ${d.value} applications`} />
+                    <span className="text-[10px] font-semibold" style={{ color: C.textMuted }}>{d.month}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GradientCard>
+
+          {/* By status */}
+          <GradientCard accent={C.orange}>
+            <div className="p-3.5 sm:p-5">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.orangeLight }}>
+                  <PieChart className="w-3.5 h-3.5" style={{ color: C.orange }} />
+                </div>
+                <h2 className="text-sm font-bold" style={{ color: C.text }}>By Status</h2>
+              </div>
+
+              <div className="flex w-full h-3 rounded-full overflow-hidden mb-4" style={{ gap: "2px", background: C.bg }}>
+                {STATUS_COMPOSITION.length === 0 ? (
+                  <div className="w-full h-full rounded-full" style={{ background: C.border }} />
+                ) : (
+                  STATUS_COMPOSITION.map(d => (
+                    <div key={d.name} className="h-full rounded-full transition-all"
+                      style={{ width: `${(d.value / totalApps) * 100}%`, background: C.blue, opacity: d.opacity, minWidth: "3px" }}
+                      title={`${d.name}: ${d.value}`} />
+                  ))
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {STATUS_COMPOSITION.map(d => (
+                  <div key={d.name} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: C.blue, opacity: d.opacity }} />
+                      <span className="text-xs font-medium truncate" style={{ color: C.text }}>{d.name}</span>
+                    </div>
+                    <span className="text-xs font-bold flex-shrink-0" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>
+                      {d.value} · {Math.round((d.value / totalApps) * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GradientCard>
+
+          {/* By risk */}
+          <GradientCard accent={C.green}>
+            <div className="p-3.5 sm:p-5">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.greenLight }}>
+                  <TrendingUp className="w-3.5 h-3.5" style={{ color: C.green }} />
+                </div>
+                <h2 className="text-sm font-bold" style={{ color: C.text }}>Portfolio by Risk</h2>
+              </div>
+
+              <div className="flex w-full h-3 rounded-full overflow-hidden mb-4" style={{ gap: "2px", background: C.bg }}>
+                {RISK_COMPOSITION.length === 0 ? (
+                  <div className="w-full h-full rounded-full" style={{ background: C.border }} />
+                ) : (
+                  RISK_COMPOSITION.map(d => (
+                    <div key={d.name} className="h-full rounded-full transition-all"
+                      style={{ width: `${(d.value / totalApps) * 100}%`, background: d.color, minWidth: "3px" }}
+                      title={`${d.name}: ${d.value}`} />
+                  ))
+                )}
+              </div>
+
+              <div className="space-y-2">
+                {RISK_COMPOSITION.map(d => (
+                  <div key={d.name} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
+                      <span className="text-xs font-medium truncate" style={{ color: C.text }}>{d.name}</span>
+                    </div>
+                    <span className="text-xs font-bold flex-shrink-0" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>
+                      {d.value} · {Math.round((d.value / totalApps) * 100)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </GradientCard>
         </div>
-      </GradientCard>
+      </div>
     </div>
   );
 }
@@ -281,23 +448,29 @@ function RequestInfoModal({ business, caseId, onClose, onSubmit }: {
 function ApplicationQueue({ statusFilter, title = "Application Queue" }: {
   statusFilter?: string[]; title?: string;
 }) {
-  const { addNotification, bankApplications, updateBankApplicationStatus } = useApp();
-  const { setActiveKey } = useOutletContext<OutletCtx>();
+  const { addNotification, bankApplications, applicationDocuments } = useApp();
+  const { setActiveKey, focusApplicationId, setFocusApplicationId } = useOutletContext<OutletCtx>();
   const [selected, setSelected] = useState<BankApplication | null>(null);
   const [activeTab, setActiveTab] = useState("info");
   const [searchQ, setSearchQ] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
 
+  useEffect(() => {
+    if (!focusApplicationId) return;
+    const app = bankApplications.find(a => a.id === focusApplicationId);
+    if (app) {
+      setSelected(app);
+      setRequestSent(false);
+    }
+    setFocusApplicationId(null);
+  }, [focusApplicationId, bankApplications, setFocusApplicationId]);
+
   const scoped = statusFilter ? bankApplications.filter(a => statusFilter.includes(a.status)) : bankApplications;
   const filtered = scoped.filter(a =>
     a.business.toLowerCase().includes(searchQ.toLowerCase()) ||
     a.caseId.toLowerCase().includes(searchQ.toLowerCase())
   );
-
-  const handleOfferResponse = (app: BankApplication, response: "accepted" | "rejected") => {
-    updateBankApplicationStatus(app.id, response === "accepted" ? "approved" : "rejected");
-  };
 
   const TABS = ["info", "ownership", "financing", "documents", "audit"];
   const TAB_LABELS: Record<string, string> = {
@@ -384,13 +557,26 @@ function ApplicationQueue({ statusFilter, title = "Application Queue" }: {
               <p className="text-xs" style={{ color: C.textMuted }}>No applications in this list right now</p>
             </div>
           )}
-          {filtered.map(app => (
-            <div key={app.id} style={{ background: selected?.id === app.id ? C.blueLight : undefined }}>
+          {filtered.map(app => {
+            const isNew = app.status === "pending";
+            return (
+            <div key={app.id}
+              style={{
+                background: selected?.id === app.id ? C.blueLight : isNew ? "#FEF2F2" : undefined,
+                borderLeft: isNew ? "3px solid #DC2626" : "3px solid transparent",
+              }}>
               <button
                 onClick={() => { setSelected(app); setRequestSent(false); }}
                 className="w-full text-left p-4 hover:bg-gray-50 transition-all">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <span className="text-xs font-semibold" style={{ color: C.text }}>{app.business}</span>
+                  <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: C.text }}>
+                    {app.business}
+                    {isNew && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ background: "#DC2626" }}>
+                        NEW
+                      </span>
+                    )}
+                  </span>
                   <Badge status={app.status} />
                 </div>
                 <div className="text-xs mb-1" style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>{app.caseId}</div>
@@ -399,22 +585,9 @@ function ApplicationQueue({ statusFilter, title = "Application Queue" }: {
                   <span className="text-xs" style={{ color: C.textMuted }}>{app.submitted}</span>
                 </div>
               </button>
-              {app.status === "offer_issued" && (
-                <div className="flex gap-2 px-4 pb-3 -mt-1">
-                  <button onClick={() => handleOfferResponse(app, "accepted")}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border"
-                    style={{ border: `1.5px solid ${C.green}`, color: C.green }}>
-                    <ThumbsUp className="w-3 h-3" /> Accepted
-                  </button>
-                  <button onClick={() => handleOfferResponse(app, "rejected")}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border"
-                    style={{ border: "1.5px solid #DC2626", color: "#DC2626" }}>
-                    <ThumbsDown className="w-3 h-3" /> Rejected
-                  </button>
-                </div>
-              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -514,16 +687,27 @@ function ApplicationQueue({ statusFilter, title = "Application Queue" }: {
 
             {activeTab === "documents" && (
               <div className="space-y-2">
-                {["CNIC (Front & Back)", "Business Registration", "Financial Statements", "Feasibility Report"].map(d => (
-                  <div key={d} className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
-                    <FileText className="w-4 h-4 flex-shrink-0" style={{ color: C.blue }} />
-                    <span className="text-sm flex-1" style={{ color: C.text }}>{d}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                      style={{ background: C.greenLight, color: C.green }}>Uploaded</span>
-                    <button className="p-1 rounded" style={{ color: C.textMuted }}><Eye className="w-3.5 h-3.5" /></button>
+                {(applicationDocuments[selected.id] ?? []).length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+                    <FileText className="w-8 h-8 opacity-20" style={{ color: C.textMuted }} />
+                    <p className="text-xs" style={{ color: C.textMuted }}>No documents on file for this application</p>
                   </div>
-                ))}
+                ) : (
+                  applicationDocuments[selected.id].map(doc => (
+                    <a key={doc.label} href={doc.fileUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-xl transition-all hover:bg-gray-50"
+                      style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
+                      <FileText className="w-4 h-4 flex-shrink-0" style={{ color: C.blue }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm" style={{ color: C.text }}>{doc.label}</div>
+                        <div className="text-xs truncate" style={{ color: C.textMuted }}>{doc.fileName}</div>
+                      </div>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
+                        style={{ background: C.greenLight, color: C.green }}>Uploaded</span>
+                      <Eye className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.textMuted }} />
+                    </a>
+                  ))
+                )}
               </div>
             )}
 
@@ -715,6 +899,7 @@ function UploadOfferModal({ business, caseId, onClose, onSubmit }: {
 
 function CreditAssessment() {
   const { addNotification, setOfferDocument } = useApp();
+  const { setActiveKey } = useOutletContext<OutletCtx>();
   const [decision, setDecision] = useState<"accept" | "decline" | null>(null);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [offerSent, setOfferSent] = useState(false);
@@ -729,6 +914,11 @@ function CreditAssessment() {
 
   return (
     <div className="px-6 py-6">
+      <button onClick={() => setActiveKey("queue")}
+        className="flex items-center gap-2 mb-4 text-sm font-medium hover:opacity-70 transition-opacity"
+        style={{ color: C.textMuted }}>
+        <ArrowLeft className="w-4 h-4" /> Back to Queue
+      </button>
       <h1 className="text-xl font-bold mb-1" style={{ color: C.text }}>Credit Assessment</h1>
       <p className="text-sm mb-6" style={{ color: C.textMuted }}>SBP-SME-2025-00142 · ABC Traders</p>
 

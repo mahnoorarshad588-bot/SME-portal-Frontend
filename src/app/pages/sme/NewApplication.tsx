@@ -57,12 +57,22 @@ function Select({ label, options, value, onChange }: {
 }
 
 interface Shareholder { name: string; cnic: string; phone: string; email: string; share: string; }
-interface DocItem { label: string; file: string | null; required: boolean; }
+interface DocItem { label: string; file: File | null; fileUrl: string | null; required: boolean; }
+
+const FACILITY_TYPES = [
+  "SME Asaan Finance (SAAF)", "Refinance Facility for SMEs", "Technology Upgrade Scheme",
+  "Women Entrepreneurship Finance", "Agri-SME Financing", "Export Finance for SMEs",
+];
+const TENORS = ["6 months", "1 year", "2 years", "3 years", "5 years", "7 years"];
 
 export default function NewApplication() {
   const navigate = useNavigate();
-  const { selectedBusiness } = useApp();
+  const { selectedBusiness, addApplication } = useApp();
   const [step, setStep] = useState(0);
+  const [facilityType, setFacilityType] = useState(FACILITY_TYPES[0]);
+  const [requestedAmount, setRequestedAmount] = useState("");
+  const [tenor, setTenor] = useState(TENORS[2]);
+  const [financingPurpose, setFinancingPurpose] = useState("");
   const [businessStatus, setBusinessStatus] = useState(selectedBusiness?.businessStatus || "Proprietorship");
   useEffect(() => {
     setBusinessStatus(selectedBusiness?.businessStatus || "Proprietorship");
@@ -73,11 +83,11 @@ export default function NewApplication() {
     { name: "", cnic: "", phone: "", email: "", share: "" },
   ]);
   const [docs, setDocs] = useState<DocItem[]>([
-    { label: "CNIC (Front & Back)", file: null, required: true },
-    { label: "Business Registration Certificate", file: null, required: true },
-    { label: "Financial Statements (last 2 years)", file: null, required: true },
-    { label: "Feasibility Report", file: null, required: false },
-    { label: "Other Supporting Documents", file: null, required: false },
+    { label: "CNIC (Front & Back)", file: null, fileUrl: null, required: true },
+    { label: "Business Registration Certificate", file: null, fileUrl: null, required: true },
+    { label: "Financial Statements (last 2 years)", file: null, fileUrl: null, required: true },
+    { label: "Feasibility Report", file: null, fileUrl: null, required: false },
+    { label: "Other Supporting Documents", file: null, fileUrl: null, required: false },
   ]);
   const addShareholder = () =>
     setShareholders([...shareholders, { name: "", cnic: "", phone: "", email: "", share: "" }]);
@@ -85,10 +95,8 @@ export default function NewApplication() {
   const removeShareholder = (i: number) =>
     setShareholders(shareholders.filter((_, idx) => idx !== i));
 
-  const markDoc = (i: number) => {
-    const updated = [...docs];
-    updated[i].file = "document.pdf";
-    setDocs(updated);
+  const handleDocUpload = (i: number, file: File) => {
+    setDocs(prev => prev.map((d, idx) => idx === i ? { ...d, file, fileUrl: URL.createObjectURL(file) } : d));
   };
 
   const ReviewRow = ({ label, value }: { label: string; value: string }) => (
@@ -232,26 +240,29 @@ export default function NewApplication() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Facility Type</label>
                 <div className="relative">
-                  <select className="w-full rounded-xl border text-sm outline-none appearance-none"
+                  <select value={facilityType} onChange={e => setFacilityType(e.target.value)}
+                    className="w-full rounded-xl border text-sm outline-none appearance-none"
                     style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
-                    <option>SME Asaan Finance (SAAF)</option>
-                    <option>Refinance Facility for SMEs</option>
-                    <option>Technology Upgrade Scheme</option>
-                    <option>Women Entrepreneurship Finance</option>
-                    <option>Agri-SME Financing</option>
-                    <option>Export Finance for SMEs</option>
+                    {FACILITY_TYPES.map(f => <option key={f}>{f}</option>)}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ color: C.textMuted }} />
                 </div>
               </div>
-              <Field label="Requested Amount (PKR)" placeholder="e.g. 8,500,000" type="text" />
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Requested Amount (PKR)</label>
+                <input type="text" placeholder="e.g. 8,500,000" value={requestedAmount}
+                  onChange={e => setRequestedAmount(e.target.value)}
+                  className="w-full rounded-xl border text-sm outline-none"
+                  style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Tenor</label>
                 <div className="relative">
-                  <select className="w-full rounded-xl border text-sm outline-none appearance-none"
+                  <select value={tenor} onChange={e => setTenor(e.target.value)}
+                    className="w-full rounded-xl border text-sm outline-none appearance-none"
                     style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
-                    {["6 months", "1 year", "2 years", "3 years", "5 years", "7 years"].map(t => <option key={t}>{t}</option>)}
+                    {TENORS.map(t => <option key={t}>{t}</option>)}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
                     style={{ color: C.textMuted }} />
@@ -260,6 +271,7 @@ export default function NewApplication() {
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Financing Purpose</label>
                 <textarea rows={4} placeholder="Describe how you intend to use the financing..."
+                  value={financingPurpose} onChange={e => setFinancingPurpose(e.target.value)}
                   className="w-full rounded-xl border text-sm outline-none resize-none"
                   style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
               </div>
@@ -289,19 +301,21 @@ export default function NewApplication() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium" style={{ color: C.text }}>{doc.label}</div>
-                    <div className="text-xs" style={{ color: C.textMuted }}>
-                      {doc.required ? "Required" : "Optional"} {doc.file && "· document.pdf"}
+                    <div className="text-xs truncate" style={{ color: C.textMuted }}>
+                      {doc.required ? "Required" : "Optional"} {doc.file && `· ${doc.file.name}`}
                     </div>
                   </div>
-                  <button onClick={() => markDoc(i)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-medium border transition-all"
+                  <label
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium border transition-all cursor-pointer flex-shrink-0"
                     style={{
                       border: `1.5px solid ${doc.file ? C.green : C.border}`,
                       color: doc.file ? C.green : C.textMuted,
                       background: doc.file ? C.greenLight : C.surface,
                     }}>
-                    {doc.file ? "Uploaded" : "Upload"}
-                  </button>
+                    <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={e => { const f = e.target.files?.[0]; if (f) handleDocUpload(i, f); }} />
+                    {doc.file ? "Replace" : "Upload"}
+                  </label>
                 </div>
               ))}
             </div>
@@ -326,18 +340,18 @@ export default function NewApplication() {
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2"
                   style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>Financing</h3>
                 <div className="rounded-xl p-4" style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
-                  <ReviewRow label="Facility Type" value="SME Asaan Finance (SAAF)" />
-                  <ReviewRow label="Requested Amount" value="PKR 8,500,000" />
-                  <ReviewRow label="Tenor" value="3 years" />
+                  <ReviewRow label="Facility Type" value={facilityType} />
+                  <ReviewRow label="Requested Amount" value={requestedAmount ? `PKR ${requestedAmount}` : "—"} />
+                  <ReviewRow label="Tenor" value={tenor} />
                 </div>
               </div>
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2"
                   style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>Documents</h3>
                 <div className="rounded-xl p-4" style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
-                  <ReviewRow label="CNIC" value="✓ Uploaded" />
-                  <ReviewRow label="Registration" value="✓ Uploaded" />
-                  <ReviewRow label="Financial Statements" value="✓ Uploaded" />
+                  {docs.map(doc => (
+                    <ReviewRow key={doc.label} label={doc.label} value={doc.file ? `✓ ${doc.file.name}` : "Not uploaded"} />
+                  ))}
                 </div>
               </div>
               <div className="p-4 rounded-xl" style={{ background: "#FEF3C7", border: "1.5px solid #D97706" }}>
@@ -366,7 +380,16 @@ export default function NewApplication() {
             Save & Continue <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
-          <button onClick={() => navigate("/sme/success")}
+          <button onClick={() => {
+            const caseId = addApplication({
+              businessName: selectedBusiness?.name ?? "",
+              scheme: facilityType,
+              amount: requestedAmount ? `PKR ${requestedAmount}` : "PKR 0",
+              bank: "HBL",
+              documents: docs.filter(d => d.file).map(d => ({ label: d.label, fileName: d.file!.name, fileUrl: d.fileUrl! })),
+            });
+            navigate("/sme/success", { state: { caseId } });
+          }}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90"
             style={{ background: C.green }}>
             Submit Application <CheckCircle2 className="w-4 h-4" />

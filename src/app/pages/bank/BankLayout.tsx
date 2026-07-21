@@ -114,6 +114,7 @@ export default function BankLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeKey, setActiveKey] = useState("dashboard");
   const [showSettings, setShowSettings] = useState(false);
+  const [focusApplicationId, setFocusApplicationId] = useState<string | null>(null);
 
   const sidebar = (
     <div className="flex flex-col h-full"
@@ -224,7 +225,7 @@ export default function BankLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto">
-          <Outlet context={{ activeKey, setActiveKey }} />
+          <Outlet context={{ activeKey, setActiveKey, focusApplicationId, setFocusApplicationId }} />
         </main>
       </div>
 

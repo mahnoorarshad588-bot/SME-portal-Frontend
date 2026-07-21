@@ -3,8 +3,9 @@ import { useNavigate } from "react-router";
 import { useApp } from "../context/AppContext";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import sbpLogo from "@/imports/state_bank_of_pakistan_logo-2.png";
+import sbpBuildingHero from "@/imports/sbp-building-hero.jpg";
 import {
-  ArrowRight, ChevronRight, ArrowUpRight, CheckCircle2,
+  ArrowRight, ArrowUpRight, CheckCircle2,
   Store, Landmark, ShieldCheck,
   FileText, MapPin, ClipboardCheck, Upload, Building2, Bell,
   Users, Banknote,
@@ -20,6 +21,15 @@ const G = {
 };
 
 const NAV_LINKS = ["Home", "About", "How It Works", "FAQ", "Contact"];
+
+const HERO = {
+  image: sbpBuildingHero,
+  eyebrow: "State Bank of Pakistan — Digital Initiative",
+  heading: ["Financing Growth.", "Empowering SMEs."],
+  body: "Pakistan's national digital platform connecting small businesses with SBP-regulated banks for concessional financing — transparent, fast, and fully secure.",
+  ctaLabel: "Apply Now",
+  overlay: "linear-gradient(100deg, rgba(6,20,15,0.92) 0%, rgba(6,20,15,0.78) 32%, rgba(6,20,15,0.45) 60%, rgba(6,20,15,0.15) 100%)",
+};
 
 /* ── Scroll-triggered fade-up reveal (mirrors sbp.org.pk's data-aos="fade-up") ── */
 function Reveal({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) {
@@ -170,8 +180,9 @@ export default function Intro() {
           </div>
           <nav className="hidden lg:flex items-center gap-7">
             {NAV_LINKS.map((link, i) => (
-              <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`} className="text-sm transition-colors"
-                style={{ color: i === 0 ? G.green : G.text, fontWeight: i === 0 ? 700 : 400, borderBottom: i === 0 ? `2px solid ${G.green}` : "2px solid transparent", paddingBottom: "3px" }}>
+              <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
+                className="text-xs font-bold uppercase transition-colors"
+                style={{ color: i === 0 ? G.green : G.text, letterSpacing: "0.08em", borderBottom: i === 0 ? `2px solid ${G.green}` : "2px solid transparent", paddingBottom: "3px" }}>
                 {link}
               </a>
             ))}
@@ -214,65 +225,56 @@ export default function Intro() {
       </header>
 
       {/* ══════════════════════════════════════════
-          HERO — split layout, SVG left, text right
+          HERO — full-bleed image (sbp.org.pk-inspired)
       ══════════════════════════════════════════ */}
-      <section id="home" className="relative overflow-hidden" style={{ background: "#FFFFFF" }}>
-        {/* soft ambient tints */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-[0.07]"
-            style={{ background: `radial-gradient(circle, ${G.blue}, transparent 70%)` }} />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 rounded-full opacity-[0.07]"
-            style={{ background: `radial-gradient(circle, ${G.green}, transparent 70%)` }} />
+      <section id="home" className="relative overflow-hidden bg-black">
+        <div className="relative" style={{ height: "min(600px, 78vh)" }}>
+          <ImageWithFallback src={HERO.image} alt="State Bank of Pakistan head office"
+            className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: HERO.overlay }} />
+
+          <div className="relative z-10 h-full max-w-7xl mx-auto px-6 lg:px-10 flex items-center">
+            <div className="max-w-xl">
+              <span className="block text-xs font-black uppercase tracking-[0.22em] text-white/90 mb-4">
+                {HERO.eyebrow}
+              </span>
+              <h1 className="mb-5" style={{ lineHeight: 1.08, letterSpacing: "-0.02em" }}>
+                <span style={{ display: "block", fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "clamp(2rem,3.6vw,3.1rem)", color: "#fff", textShadow: "0 2px 16px rgba(0,0,0,0.4)" }}>
+                  {HERO.heading[0]}
+                </span>
+                <span style={{ display: "block", fontFamily: "'Manrope', sans-serif", fontWeight: 900, fontSize: "clamp(2rem,3.6vw,3.1rem)", background: "linear-gradient(110deg, #FCD34D 0%, #A7F3D0 55%, #93C5FD 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", paddingBottom: "6px" }}>
+                  {HERO.heading[1]}
+                </span>
+              </h1>
+              <p className="mb-8 text-[15px] leading-relaxed text-white/90" style={{ maxWidth: "460px", textShadow: "0 1px 8px rgba(0,0,0,0.35)" }}>
+                {HERO.body}
+              </p>
+              <button onClick={() => navigate("/sme/login")}
+                className="flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-bold text-white hover:opacity-90 active:scale-[0.97] transition-all"
+                style={{ background: G.green }}>
+                {HERO.ctaLabel} <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-10 py-24 lg:py-32">
-          <div className="max-w-2xl text-left">
-            {/* badge */}
-            <div className="flex items-center gap-0 mb-8 w-fit rounded-full overflow-hidden" style={{ border: `2px solid ${G.green}30` }}>
-              <span className="px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white" style={{ background: G.green }}>Official</span>
-              <span className="px-3 py-1.5 text-[10px] font-semibold" style={{ color: G.textMuted, background: G.bg }}>A Digital Initiative by State Bank of Pakistan</span>
-            </div>
-
-            {/* headline */}
-            <h1 className="mb-6" style={{ lineHeight: 1.05, letterSpacing: "-0.03em" }}>
-              <span style={{ display: "block", fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "clamp(2.4rem,4vw,3.6rem)", color: "#0A0A0A", marginBottom: "0.2rem" }}>Financing Growth.</span>
-              <span style={{ display: "block", fontFamily: "'Manrope', sans-serif", fontWeight: 900, fontSize: "clamp(2.4rem,4vw,3.6rem)", background: `linear-gradient(110deg, ${G.green} 0%, ${G.blue} 55%, ${G.orange} 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>Empowering SMEs.</span>
-            </h1>
-
-            <p className="mb-10 text-[15px] leading-relaxed" style={{ color: G.textMuted, maxWidth: "480px" }}>
-              Pakistan's national digital platform connecting small businesses with SBP-regulated banks for concessional financing — transparent, fast, and fully secure.
-            </p>
-
-            {/* CTAs */}
-            <div className="flex flex-wrap gap-3 mb-12">
-              <button onClick={() => navigate("/sme/login")}
-                className="flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-bold text-white hover:opacity-90 active:scale-[0.97] transition-all"
-                style={{ background: G.orange }}>
-                Apply Now <ArrowRight className="w-4 h-4" />
-              </button>
-              <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}
-                className="flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-semibold hover:opacity-80 active:scale-[0.97] transition-all"
-                style={{ border: `2px solid ${G.blue}30`, color: G.blue, background: G.blueLight }}>
-                How It Works <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* inline stats */}
-            <div className="flex flex-wrap gap-6">
-              {[
-                { val: "1.2M+",    label: "Registered SMEs", dot: G.green },
-                { val: "PKR 340B", label: "Disbursed",        dot: G.blue },
-                { val: "32",       label: "Partner Banks",    dot: G.orange },
-              ].map(({ val, label, dot }) => (
-                <div key={label} className="flex items-center gap-2.5">
-                  <div className="w-2 h-2 rounded-full" style={{ background: dot }} />
-                  <div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: "13px", fontWeight: 700, color: "#0A0A0A", letterSpacing: "0.03em" }}>{val}</div>
-                    <div style={{ fontSize: "10px", color: G.textMuted }}>{label}</div>
-                  </div>
+        {/* stat strip */}
+        <div className="relative z-10 bg-white" style={{ borderBottom: `1.5px solid ${G.border}` }}>
+          <div className="max-w-5xl mx-auto px-6 lg:px-10 grid grid-cols-3">
+            {[
+              { val: "1.2M+",    label: "Registered SMEs", dot: G.green },
+              { val: "PKR 340B", label: "Disbursed",        dot: G.blue },
+              { val: "32",       label: "Partner Banks",    dot: G.orange },
+            ].map(({ val, label, dot }, i) => (
+              <div key={label} className="flex items-center justify-center gap-2.5 py-5"
+                style={{ borderLeft: i > 0 ? `1.5px solid ${G.border}` : "none" }}>
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: dot }} />
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: "14px", fontWeight: 700, color: "#0A0A0A" }}>{val}</div>
+                  <div style={{ fontSize: "10px", color: G.textMuted }}>{label}</div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
