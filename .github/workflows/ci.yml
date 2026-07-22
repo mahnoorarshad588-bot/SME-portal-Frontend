@@ -9,8 +9,12 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    name: Build React Application
     runs-on: ubuntu-latest
 
     steps:
@@ -21,9 +25,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Project
         run: npm run build
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: dist/
