@@ -180,11 +180,12 @@ export default function Intro() {
           </div>
           <nav className="hidden lg:flex items-center gap-7">
             {NAV_LINKS.map((link, i) => (
-              <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
+              <button key={link}
+                onClick={() => document.getElementById(link.toLowerCase().replace(/\s+/g, "-"))?.scrollIntoView({ behavior: "smooth" })}
                 className="text-xs font-bold uppercase transition-colors"
                 style={{ color: i === 0 ? G.green : G.text, letterSpacing: "0.08em", borderBottom: i === 0 ? `2px solid ${G.green}` : "2px solid transparent", paddingBottom: "3px" }}>
                 {link}
-              </a>
+              </button>
             ))}
           </nav>
 
@@ -207,12 +208,15 @@ export default function Intro() {
           <div className="lg:hidden px-6 py-4 border-t" style={{ borderColor: G.border, background: "#fff" }}>
             <nav className="flex flex-col gap-1 mb-4">
               {NAV_LINKS.map((link, i) => (
-                <a key={link} href={`#${link.toLowerCase().replace(/\s+/g, "-")}`}
-                  onClick={() => setMobileNavOpen(false)}
-                  className="text-sm py-2.5 px-2 rounded-lg transition-colors"
+                <button key={link}
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    document.getElementById(link.toLowerCase().replace(/\s+/g, "-"))?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="text-sm py-2.5 px-2 rounded-lg text-left transition-colors"
                   style={{ color: i === 0 ? G.green : G.text, fontWeight: i === 0 ? 700 : 500, background: i === 0 ? G.greenLight : "transparent" }}>
                   {link}
-                </a>
+                </button>
               ))}
             </nav>
             <button onClick={() => { setMobileNavOpen(false); document.getElementById("access-portal")?.scrollIntoView({ behavior: "smooth" }); }}
