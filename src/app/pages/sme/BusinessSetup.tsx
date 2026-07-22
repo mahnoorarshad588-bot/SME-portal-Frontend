@@ -3,8 +3,8 @@ import { useNavigate } from "react-router";
 import { ImageWithFallback } from "../../components/figma/ImageWithFallback";
 import sbpLogo from "@/imports/state_bank_of_pakistan_logo-1.png";
 import { C } from "../../constants/colors";
-import { useApp } from "../../context/AppContext";
-import { ArrowLeft, CheckCircle2, ShieldCheck, Scale, Users2, Zap, ChevronDown, Building2 } from "lucide-react";
+import { useApp, type Shareholder } from "../../context/AppContext";
+import { ArrowLeft, CheckCircle2, ShieldCheck, Scale, Users2, Zap, ChevronDown, Building2, Plus, Trash2 } from "lucide-react";
 
 function Field({ label, placeholder, type = "text", hint, required = false, value, onChange }: {
   label: string; placeholder: string; type?: string; hint?: string; required?: boolean;
@@ -92,8 +92,21 @@ export default function BusinessSetup() {
   const { addBusiness } = useApp();
   const [showSuccess, setShowSuccess] = useState(false);
   const [form, setForm] = useState(INITIAL_FORM);
+  const [shareholders, setShareholders] = useState<Shareholder[]>([
+    { name: "", cnic: "", phone: "", email: "", share: "", role: "" },
+  ]);
 
   const set = (key: keyof typeof form) => (v: string) => setForm(f => ({ ...f, [key]: v }));
+
+  const showShareholders = form.businessStatus !== "" && form.businessStatus !== "Proprietorship";
+  const isPartnership = form.businessStatus === "Partnership";
+
+  const addShareholder = () =>
+    setShareholders([...shareholders, { name: "", cnic: "", phone: "", email: "", share: "", role: "" }]);
+  const removeShareholder = (i: number) =>
+    setShareholders(shareholders.filter((_, idx) => idx !== i));
+  const updateShareholder = (i: number, key: keyof Shareholder) => (v: string) =>
+    setShareholders(prev => prev.map((sh, idx) => idx === i ? { ...sh, [key]: v } : sh));
 
   const handleSave = () => {
     addBusiness({
@@ -118,6 +131,7 @@ export default function BusinessSetup() {
       description: form.description,
       bank: form.bank || undefined,
       iban: form.iban || undefined,
+      shareholders: showShareholders ? shareholders : undefined,
     });
     setShowSuccess(true);
     setTimeout(() => navigate("/sme"), 1500);
@@ -249,6 +263,49 @@ export default function BusinessSetup() {
               </div>
             </div>
           </div>
+
+          {/* Shareholders / Partnership Details */}
+          {showShareholders && (
+            <div className="mt-8 rounded-2xl border p-5 md:p-6" style={{ border: `1.5px solid ${C.border}`, background: C.surface }}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold" style={{ color: C.text }}>
+                  {isPartnership ? "Partnership Details" : "Shareholders"}
+                </h3>
+                <button onClick={addShareholder}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all hover:bg-gray-50"
+                  style={{ border: `1.5px solid ${C.green}`, color: C.green }}>
+                  <Plus className="w-3.5 h-3.5" /> {isPartnership ? "Add Partner" : "Add Shareholder"}
+                </button>
+              </div>
+              <div className="space-y-4">
+                {shareholders.map((sh, i) => (
+                  <div key={i} className="p-4 rounded-xl border"
+                    style={{ border: `1.5px solid ${C.border}`, background: C.bg }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold" style={{ color: C.textMuted }}>
+                        {isPartnership ? "PARTNER" : "SHAREHOLDER"} {i + 1}
+                      </span>
+                      {shareholders.length > 1 && (
+                        <button onClick={() => removeShareholder(i)} style={{ color: "#DC2626" }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Field label="Full Name" placeholder="Ahmed Khan" value={sh.name} onChange={updateShareholder(i, "name")} />
+                      <Field label="CNIC" placeholder="XXXXX-XXXXXXX-X" value={sh.cnic} onChange={updateShareholder(i, "cnic")} />
+                      {isPartnership && (
+                        <Field label="Role in Partnership" placeholder="e.g. Managing Partner" value={sh.role} onChange={updateShareholder(i, "role")} />
+                      )}
+                      <Field label="Contact Number" placeholder="+92 300 0000000" type="tel" value={sh.phone} onChange={updateShareholder(i, "phone")} />
+                      <Field label="Email Address" placeholder="email@domain.com" type="email" value={sh.email} onChange={updateShareholder(i, "email")} />
+                      <Field label={isPartnership ? "Profit Sharing %" : "Shareholding %"} placeholder="e.g. 60" type="number" value={sh.share} onChange={updateShareholder(i, "share")} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Bank Detail (Optional) */}
           <div className="mt-8 rounded-2xl border overflow-hidden" style={{ border: `1.5px solid ${C.border}` }}>

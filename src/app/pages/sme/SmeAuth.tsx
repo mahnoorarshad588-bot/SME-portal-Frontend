@@ -81,20 +81,19 @@ const AppleLogo = () => (
   </svg>
 );
 
-function SsoButtons({ accentColor }: { accentColor: string }) {
+function SsoButtons({ accentColor, onSelect }: { accentColor: string; onSelect: (provider: "Google" | "Microsoft" | "Apple") => void }) {
   const providers = [
-    { label: "Continue with Google",    Logo: GoogleLogo,    border: "#DADCE0" },
-    { label: "Continue with Microsoft", Logo: MicrosoftLogo, border: "#D1D5DB" },
-    { label: "Continue with Apple",     Logo: AppleLogo,     border: "#D1D5DB" },
+    { label: "Continue with Google",    provider: "Google" as const,    Logo: GoogleLogo },
+    { label: "Continue with Microsoft", provider: "Microsoft" as const, Logo: MicrosoftLogo },
+    { label: "Continue with Apple",     provider: "Apple" as const,     Logo: AppleLogo },
   ];
   return (
-    <div className="flex flex-col gap-2.5">
-      {providers.map(({ label, Logo }) => (
-        <button key={label}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium transition-all hover:bg-gray-50 active:scale-[0.98]"
-          style={{ border: `1.5px solid ${C.border}`, color: C.text, background: "#fff" }}>
+    <div className="flex items-center justify-center gap-3">
+      {providers.map(({ label, provider, Logo }) => (
+        <button key={label} type="button" aria-label={label} title={label} onClick={() => onSelect(provider)}
+          className="flex items-center justify-center w-12 h-12 rounded-xl border transition-all hover:bg-gray-50 active:scale-[0.98]"
+          style={{ border: `1.5px solid ${C.border}`, background: "#fff" }}>
           <Logo />
-          <span className="flex-1 text-center">{label}</span>
         </button>
       ))}
     </div>
@@ -113,6 +112,11 @@ export default function SmeAuth() {
 
   const handleLogin = () => {
     setUser({ name: "Ahmed Khan", email: email || "ahmed.khan@abctraders.com" });
+    navigate("/sme/setup");
+  };
+
+  const handleSso = (provider: "Google" | "Microsoft" | "Apple") => {
+    setUser({ name: "Ahmed Khan", email: `ahmed.khan@${provider.toLowerCase()}.com` });
     navigate("/sme/setup");
   };
 
@@ -255,7 +259,7 @@ export default function SmeAuth() {
                 <div className="flex-1 h-px" style={{ background: C.border }} />
               </div>
 
-              <SsoButtons accentColor={C.green} />
+              <SsoButtons accentColor={C.green} onSelect={handleSso} />
 
               <p className="text-center text-sm mt-6" style={{ color: C.textMuted }}>
                 Don&apos;t have an account?{" "}

@@ -2,6 +2,15 @@ import { createContext, useContext, useState, ReactNode } from "react";
 
 export type Role = "sme" | "bank" | "sbp" | null;
 
+export interface Shareholder {
+  name: string;
+  cnic: string;
+  phone: string;
+  email: string;
+  share: string;
+  role: string;
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -24,6 +33,7 @@ export interface Business {
   description?: string;
   bank?: string;
   iban?: string;
+  shareholders?: Shareholder[];
 }
 
 export interface Application {

@@ -6,6 +6,49 @@ import { useApp } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import { ArrowLeft, Mail, Building2, ArrowRight, KeyRound, ChevronDown, ShieldCheck } from "lucide-react";
 
+const GoogleLogo = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4"/>
+    <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853"/>
+    <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05"/>
+    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335"/>
+  </svg>
+);
+
+const MicrosoftLogo = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022"/>
+    <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00"/>
+    <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF"/>
+    <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900"/>
+  </svg>
+);
+
+const AppleLogo = () => (
+  <svg width="18" height="18" viewBox="0 0 814 1000" fill="currentColor">
+    <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.3-161-39.3c-73.3 0-98.7 40.1-167.4 40.1s-107.9-58.7-155.5-127.5c-55.1-77.7-98.5-209.5-98.5-334.6 0-197.5 133.2-302 264.7-302 70.2 0 128.7 45.7 172.3 45.7 41.7 0 107.4-48.1 185.5-48.1 29.6 0 108.2 2.6 168.4 101zM541.9 58.4c26.7-30.7 45.7-73.3 45.7-115.9 0-6.4-.6-12.9-1.9-18.1-44.5 1.9-98.7 30.1-131.5 63.5-24.8 26.7-47.5 69.9-47.5 113.1 0 7 1.3 14 1.9 16.4 2.6.6 7 1.3 11.3 1.3 40.1 0 91.4-26.8 121.9-60.3z"/>
+  </svg>
+);
+
+function SsoIconRow({ onSelect }: { onSelect: (provider: "Google" | "Microsoft" | "Apple") => void }) {
+  const providers = [
+    { label: "Continue with Google",    provider: "Google" as const,    Logo: GoogleLogo },
+    { label: "Continue with Microsoft", provider: "Microsoft" as const, Logo: MicrosoftLogo },
+    { label: "Continue with Apple",     provider: "Apple" as const,     Logo: AppleLogo },
+  ];
+  return (
+    <div className="flex items-center justify-center gap-3">
+      {providers.map(({ label, provider, Logo }) => (
+        <button key={label} type="button" aria-label={label} title={label} onClick={() => onSelect(provider)}
+          className="flex items-center justify-center w-12 h-12 rounded-xl border transition-all hover:bg-gray-50 active:scale-[0.98]"
+          style={{ border: `1.5px solid ${C.border}`, background: "#fff" }}>
+          <Logo />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function BankAuth() {
   const navigate = useNavigate();
   const { setUser } = useApp();
@@ -18,6 +61,11 @@ export default function BankAuth() {
 
   const handleVerify = () => {
     setUser({ name: "Bilal Raza — HBL Credit", email: email || "bilal.raza@hbl.com" });
+    navigate("/bank");
+  };
+
+  const handleSso = (provider: "Google" | "Microsoft" | "Apple") => {
+    setUser({ name: "Bilal Raza — HBL Credit", email: `bilal.raza@${provider.toLowerCase()}.com` });
     navigate("/bank");
   };
 
@@ -91,6 +139,10 @@ export default function BankAuth() {
               style={{ background: C.blue }}>
               Send OTP <ArrowRight className="w-4 h-4" />
             </button>
+
+            <div className="mt-6">
+              <SsoIconRow onSelect={handleSso} />
+            </div>
 
             <div className="mt-6 p-4 rounded-xl flex gap-3"
               style={{ background: C.blueLight, border: `1.5px solid ${C.blue}20` }}>

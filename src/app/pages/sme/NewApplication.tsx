@@ -1,15 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useApp } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import {
-  CheckCircle2, ArrowLeft, ArrowRight, Plus, Trash2, Upload,
-  Building2, Users, Banknote, FileUp, ClipboardList, ChevronDown,
+  CheckCircle2, ArrowLeft, ArrowRight, Upload,
+  Banknote, FileUp, ClipboardList, ChevronDown, Building2, Plus, Trash2,
 } from "lucide-react";
 
 const ALL_STEPS = [
-  { key: "business", label: "Business Info", icon: Building2 },
-  { key: "shareholders", label: "Shareholders", icon: Users },
   { key: "financing", label: "Financing", icon: Banknote },
   { key: "documents", label: "Documents", icon: FileUp },
   { key: "review", label: "Review", icon: ClipboardList },
@@ -37,63 +35,51 @@ function Field({ label, placeholder, value, readOnly = false, type = "text" }: {
   );
 }
 
-function Select({ label, options, value, onChange }: {
-  label: string; options: string[]; value: string; onChange: (v: string) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>{label}</label>
-      <div className="relative">
-        <select value={value} onChange={e => onChange(e.target.value)}
-          className="w-full rounded-xl border text-sm outline-none appearance-none"
-          style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ color: C.textMuted }} />
-      </div>
-    </div>
-  );
-}
-
-interface Shareholder { name: string; cnic: string; phone: string; email: string; share: string; }
 interface DocItem { label: string; file: File | null; fileUrl: string | null; required: boolean; }
+interface Facility { type: string; amount: string; collateralType: string; collateralValue: string; }
 
-const FACILITY_TYPES = [
-  "SME Asaan Finance (SAAF)", "Refinance Facility for SMEs", "Technology Upgrade Scheme",
-  "Women Entrepreneurship Finance", "Agri-SME Financing", "Export Finance for SMEs",
+const FACILITY_TYPE_OPTIONS = [
+  "Financing for Asset Purchase", "Term Finance", "Running Finance", "Over Draft", "Working Capital",
 ];
-const TENORS = ["6 months", "1 year", "2 years", "3 years", "5 years", "7 years"];
+
+const PROPRIETORSHIP_DOCS = [
+  "CNIC of Owner",
+  "Financial Statement(s)/ Projected Financial(s)",
+  "Feasibility Report",
+];
+const PARTNERSHIP_DOCS = [
+  "CNIC of Borrower(s)",
+  "Memorandum & Articles of Association",
+  "Financial Statement(s)/Projected Financial(s)",
+  "Feasibility Report",
+];
 
 export default function NewApplication() {
   const navigate = useNavigate();
-  const { selectedBusiness, addApplication } = useApp();
+  const { businesses, selectedBusiness, setSelectedBusiness, addApplication } = useApp();
   const [step, setStep] = useState(0);
-  const [facilityType, setFacilityType] = useState(FACILITY_TYPES[0]);
-  const [requestedAmount, setRequestedAmount] = useState("");
-  const [tenor, setTenor] = useState(TENORS[2]);
-  const [financingPurpose, setFinancingPurpose] = useState("");
-  const [businessStatus, setBusinessStatus] = useState(selectedBusiness?.businessStatus || "Proprietorship");
-  useEffect(() => {
-    setBusinessStatus(selectedBusiness?.businessStatus || "Proprietorship");
-  }, [selectedBusiness?.id]);
-  const showShareholders = businessStatus !== "Proprietorship";
-  const STEPS = ALL_STEPS.filter(s => s.key !== "shareholders" || showShareholders);
-  const [shareholders, setShareholders] = useState<Shareholder[]>([
-    { name: "", cnic: "", phone: "", email: "", share: "" },
+  const [facilities, setFacilities] = useState<Facility[]>([
+    { type: FACILITY_TYPE_OPTIONS[0], amount: "", collateralType: "", collateralValue: "" },
   ]);
-  const [docs, setDocs] = useState<DocItem[]>([
-    { label: "CNIC (Front & Back)", file: null, fileUrl: null, required: true },
-    { label: "Business Registration Certificate", file: null, fileUrl: null, required: true },
-    { label: "Financial Statements (last 2 years)", file: null, fileUrl: null, required: true },
-    { label: "Feasibility Report", file: null, fileUrl: null, required: false },
-    { label: "Other Supporting Documents", file: null, fileUrl: null, required: false },
-  ]);
-  const addShareholder = () =>
-    setShareholders([...shareholders, { name: "", cnic: "", phone: "", email: "", share: "" }]);
+  const STEPS = ALL_STEPS;
+  const businessStatus = selectedBusiness?.businessStatus ?? "Proprietorship";
+  const requiredDocLabels = businessStatus === "Proprietorship" ? PROPRIETORSHIP_DOCS : PARTNERSHIP_DOCS;
+  const [docs, setDocs] = useState<DocItem[]>(
+    requiredDocLabels.map(label => ({ label, file: null, fileUrl: null, required: true }))
+  );
 
-  const removeShareholder = (i: number) =>
-    setShareholders(shareholders.filter((_, idx) => idx !== i));
+  useEffect(() => {
+    setDocs(requiredDocLabels.map(label => ({ label, file: null, fileUrl: null, required: true })));
+  }, [businessStatus]);
+
+  const addFacility = () =>
+    setFacilities(f => [...f, { type: FACILITY_TYPE_OPTIONS[0], amount: "", collateralType: "", collateralValue: "" }]);
+  const removeFacility = (i: number) =>
+    setFacilities(f => f.filter((_, idx) => idx !== i));
+  const updateFacility = (i: number, key: keyof Facility) => (v: string) =>
+    setFacilities(prev => prev.map((row, idx) => idx === i ? { ...row, [key]: v } : row));
+
+  const totalFacilityAmount = facilities.reduce((sum, f) => sum + (parseFloat(f.amount.replace(/,/g, "")) || 0), 0);
 
   const handleDocUpload = (i: number, file: File) => {
     setDocs(prev => prev.map((d, idx) => idx === i ? { ...d, file, fileUrl: URL.createObjectURL(file) } : d));
@@ -118,6 +104,36 @@ export default function NewApplication() {
           <h1 className="text-lg font-bold" style={{ color: C.text }}>New Financing Application</h1>
           <p className="text-xs" style={{ color: C.textMuted }}>{selectedBusiness?.name}</p>
         </div>
+      </div>
+
+      {/* Select Business — choosing one auto-fills all business details, no form needed */}
+      <div className="max-w-2xl rounded-2xl border p-5 mb-6" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: C.text }}>
+          <Building2 className="w-4 h-4" style={{ color: C.green }} />
+          Applying For
+        </label>
+        <div className="relative">
+          <select
+            value={selectedBusiness?.id ?? ""}
+            onChange={e => {
+              const biz = businesses.find(b => b.id === e.target.value);
+              if (biz) setSelectedBusiness(biz);
+            }}
+            className="w-full rounded-xl border text-sm outline-none appearance-none font-medium"
+            style={{ padding: "12px 40px 12px 14px", background: C.greenLight, border: `1.5px solid ${C.green}40`, color: C.greenDark }}>
+            {businesses.length === 0 && <option value="">No businesses found</option>}
+            {businesses.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+          <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+            style={{ color: C.green }} />
+        </div>
+        {selectedBusiness && (
+          <p className="text-xs mt-2" style={{ color: C.textMuted }}>
+            {selectedBusiness.nature} · NTN {selectedBusiness.ntn} · {selectedBusiness.address}
+          </p>
+        )}
       </div>
 
       {/* Stepper */}
@@ -149,82 +165,69 @@ export default function NewApplication() {
       {/* Form card */}
       <div className="max-w-2xl rounded-2xl border p-6" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
 
-        {/* Step 1: Business Information */}
-        {STEPS[step]?.key === "business" && (
+        {/* Step 1: Financing Requirement */}
+        {STEPS[step]?.key === "financing" && (
           <div>
-            <div className="mb-5 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `linear-gradient(135deg, ${C.green}, ${C.greenDark})` }}>
-                <Building2 className="w-4.5 h-4.5 text-white" style={{ width: "18px", height: "18px" }} />
-              </div>
-              <div>
-                <h2 className="text-base font-extrabold leading-tight" style={{ color: C.text, letterSpacing: "-0.01em" }}>Business Information</h2>
-                <div className="h-[3px] w-8 rounded-full mt-1" style={{ background: `linear-gradient(90deg, ${C.green}, ${C.blue})` }} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Business Name" placeholder="" value={selectedBusiness?.name} readOnly />
-              <Field label="Owner CNIC" placeholder="" value={selectedBusiness?.ownerCnic} readOnly />
-              <Field label="Contact Person" placeholder="" value={selectedBusiness?.contactPerson} readOnly />
-              <Field label="Cell / Landline No." placeholder="" value={selectedBusiness?.cellLandline} readOnly />
-              <Field label="Business Email Address" placeholder="" value={selectedBusiness?.email} readOnly />
-              <Field label="Business Nature" placeholder="" value={selectedBusiness?.nature} readOnly />
-              <Field label="NTN" placeholder="" value={selectedBusiness?.ntn} readOnly />
-              <Select label="Business Status" options={["Proprietorship", "Partnership", "Pvt Ltd"]}
-                value={businessStatus} onChange={setBusinessStatus} />
-              <div className="md:col-span-2">
-                <Field label="Business Address" placeholder="" value={selectedBusiness?.address} readOnly />
-              </div>
-              <Field label="Year of Establishment" placeholder="" value={selectedBusiness?.yearEstablished} readOnly />
-              <Field label="Annual Sales (PKR)" placeholder="" value={selectedBusiness?.annualSales} readOnly />
-              <Field label="No. of Employees" placeholder="" value={selectedBusiness?.employees} readOnly />
-              <Field label="Business Premise" placeholder="" value={selectedBusiness?.premise} readOnly />
-              {selectedBusiness?.registration === "Yes" && (
-                <>
-                  <Field label="Registration Number" placeholder="" value={selectedBusiness?.registrationNumber} readOnly />
-                  <Field label="Registration Authority" placeholder="" value={selectedBusiness?.registrationAuthority} readOnly />
-                </>
-              )}
-            </div>
-            <div className="mt-4 p-3 rounded-xl flex gap-3"
-              style={{ background: C.greenLight, border: `1.5px solid ${C.green}20` }}>
-              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.green }} />
-              <p className="text-xs" style={{ color: C.greenDark }}>
-                Business details are auto-populated from your profile. To update, go to My Businesses.
-              </p>
-            </div>
-          </div>
-        )}
+            <h2 className="text-base font-bold mb-1" style={{ color: C.text }}>Financing Requirement</h2>
 
-        {/* Step 2: Shareholders (Partnership / Pvt Ltd only) */}
-        {STEPS[step]?.key === "shareholders" && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold" style={{ color: C.text }}>Partners / Shareholders</h2>
-              <button onClick={addShareholder}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all hover:bg-gray-50"
+            <div className="flex items-center justify-between mb-1.5 mt-4">
+              <label className="text-sm font-medium" style={{ color: C.text }}>Facility(ies) Requested</label>
+              <button onClick={addFacility}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all hover:bg-gray-50"
                 style={{ border: `1.5px solid ${C.green}`, color: C.green }}>
-                <Plus className="w-3.5 h-3.5" /> Add Shareholder
+                <Plus className="w-3.5 h-3.5" /> Add Facility
               </button>
             </div>
+            <p className="text-xs mb-3" style={{ color: C.textMuted }}>
+              e.g. Financing for Asset Purchase, Term Finance, Running Finance, Over Draft, Working Capital etc.
+            </p>
+
             <div className="space-y-4">
-              {shareholders.map((sh, i) => (
+              {facilities.map((f, i) => (
                 <div key={i} className="p-4 rounded-xl border"
                   style={{ border: `1.5px solid ${C.border}`, background: C.bg }}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-semibold" style={{ color: C.textMuted }}>SHAREHOLDER {i + 1}</span>
-                    {shareholders.length > 1 && (
-                      <button onClick={() => removeShareholder(i)} style={{ color: "#DC2626" }}>
+                    <span className="text-xs font-semibold" style={{ color: C.textMuted }}>FACILITY {i + 1}</span>
+                    {facilities.length > 1 && (
+                      <button onClick={() => removeFacility(i)} style={{ color: "#DC2626" }}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Field label="Full Name" placeholder="Ahmed Khan" value={sh.name} />
-                    <Field label="CNIC" placeholder="XXXXX-XXXXXXX-X" value={sh.cnic} />
-                    <Field label="Contact Number" placeholder="+92 300 0000000" value={sh.phone} />
-                    <Field label="Email Address" placeholder="email@domain.com" type="email" value={sh.email} />
-                    <Field label="Shareholding %" placeholder="e.g. 60" value={sh.share} />
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Type of Facility</label>
+                      <div className="relative">
+                        <select value={f.type} onChange={e => updateFacility(i, "type")(e.target.value)}
+                          className="w-full rounded-xl border text-sm outline-none appearance-none"
+                          style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
+                          {FACILITY_TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
+                        </select>
+                        <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                          style={{ color: C.textMuted }} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Amount (Rs.)</label>
+                      <input type="text" placeholder="e.g. 2,000,000" value={f.amount}
+                        onChange={e => updateFacility(i, "amount")(e.target.value)}
+                        className="w-full rounded-xl border text-sm outline-none"
+                        style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Collateral Type</label>
+                      <input type="text" placeholder="e.g. Land, Vehicle, Cash, Bond" value={f.collateralType}
+                        onChange={e => updateFacility(i, "collateralType")(e.target.value)}
+                        className="w-full rounded-xl border text-sm outline-none"
+                        style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Collateral Value (Rs.)</label>
+                      <input type="text" placeholder="e.g. 3,000,000" value={f.collateralValue}
+                        onChange={e => updateFacility(i, "collateralValue")(e.target.value)}
+                        className="w-full rounded-xl border text-sm outline-none"
+                        style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -232,54 +235,7 @@ export default function NewApplication() {
           </div>
         )}
 
-        {/* Step 3: Financing Requirement */}
-        {STEPS[step]?.key === "financing" && (
-          <div>
-            <h2 className="text-base font-bold mb-4" style={{ color: C.text }}>Financing Requirement</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Facility Type</label>
-                <div className="relative">
-                  <select value={facilityType} onChange={e => setFacilityType(e.target.value)}
-                    className="w-full rounded-xl border text-sm outline-none appearance-none"
-                    style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
-                    {FACILITY_TYPES.map(f => <option key={f}>{f}</option>)}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: C.textMuted }} />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Requested Amount (PKR)</label>
-                <input type="text" placeholder="e.g. 8,500,000" value={requestedAmount}
-                  onChange={e => setRequestedAmount(e.target.value)}
-                  className="w-full rounded-xl border text-sm outline-none"
-                  style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Tenor</label>
-                <div className="relative">
-                  <select value={tenor} onChange={e => setTenor(e.target.value)}
-                    className="w-full rounded-xl border text-sm outline-none appearance-none"
-                    style={{ padding: "11px 36px 11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }}>
-                    {TENORS.map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: C.textMuted }} />
-                </div>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Financing Purpose</label>
-                <textarea rows={4} placeholder="Describe how you intend to use the financing..."
-                  value={financingPurpose} onChange={e => setFinancingPurpose(e.target.value)}
-                  className="w-full rounded-xl border text-sm outline-none resize-none"
-                  style={{ padding: "11px 14px", background: C.surface, border: `1.5px solid ${C.border}`, color: C.text }} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 5: Documents */}
+        {/* Step 2: Documents */}
         {STEPS[step]?.key === "documents" && (
           <div>
             <h2 className="text-base font-bold mb-4" style={{ color: C.text }}>Document Upload</h2>
@@ -322,7 +278,7 @@ export default function NewApplication() {
           </div>
         )}
 
-        {/* Step 6: Review */}
+        {/* Step 3: Review */}
         {STEPS[step]?.key === "review" && (
           <div>
             <h2 className="text-base font-bold mb-4" style={{ color: C.text }}>Review & Submit</h2>
@@ -340,9 +296,10 @@ export default function NewApplication() {
                 <h3 className="text-xs font-bold uppercase tracking-wider mb-2"
                   style={{ color: C.textMuted, fontFamily: "var(--font-mono)" }}>Financing</h3>
                 <div className="rounded-xl p-4" style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
-                  <ReviewRow label="Facility Type" value={facilityType} />
-                  <ReviewRow label="Requested Amount" value={requestedAmount ? `PKR ${requestedAmount}` : "—"} />
-                  <ReviewRow label="Tenor" value={tenor} />
+                  {facilities.map((f, i) => (
+                    <ReviewRow key={i} label={f.type}
+                      value={`PKR ${f.amount || "0"}${f.collateralType ? ` · Collateral: ${f.collateralType} (PKR ${f.collateralValue || "0"})` : ""}`} />
+                  ))}
                 </div>
               </div>
               <div>
@@ -383,8 +340,8 @@ export default function NewApplication() {
           <button onClick={() => {
             const caseId = addApplication({
               businessName: selectedBusiness?.name ?? "",
-              scheme: facilityType,
-              amount: requestedAmount ? `PKR ${requestedAmount}` : "PKR 0",
+              scheme: facilities.map(f => f.type).join(", "),
+              amount: `PKR ${totalFacilityAmount.toLocaleString()}`,
               bank: "HBL",
               documents: docs.filter(d => d.file).map(d => ({ label: d.label, fileName: d.file!.name, fileUrl: d.fileUrl! })),
             });

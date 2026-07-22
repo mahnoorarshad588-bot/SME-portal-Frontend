@@ -282,7 +282,7 @@ export default function Intro() {
       {/* ══════════════════════════════════════════
           MISSION STATEMENT — full-width bold text
       ══════════════════════════════════════════ */}
-      <section id="about" style={{ background: "#fff", borderBottom: `1.5px solid ${G.border}` }}>
+      <section id="about" className="scroll-mt-24" style={{ background: "#fff", borderBottom: `1.5px solid ${G.border}` }}>
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-20 text-center">
           <Reveal>
             <div className="flex items-center justify-center gap-3 mb-8">
@@ -459,7 +459,7 @@ export default function Intro() {
       {/* ══════════════════════════════════════════
           HOW IT WORKS — horizontal timeline
       ══════════════════════════════════════════ */}
-      <section id="how-it-works" className="bg-white" style={{ borderBottom: `1.5px solid ${G.border}` }}>
+      <section id="how-it-works" className="bg-white scroll-mt-24" style={{ borderBottom: `1.5px solid ${G.border}` }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16">
           <Reveal>
             <div className="text-center mb-14">
@@ -587,7 +587,7 @@ export default function Intro() {
       </section>
 
       {/* ── FAQ ── */}
-      <section id="faq" className="bg-white" style={{ borderBottom: `1.5px solid ${G.border}` }}>
+      <section id="faq" className="bg-white scroll-mt-24" style={{ borderBottom: `1.5px solid ${G.border}` }}>
         <div className="max-w-3xl mx-auto px-6 lg:px-10 py-14">
           <Reveal>
             <div className="text-center mb-10">
@@ -620,7 +620,7 @@ export default function Intro() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ background: "#FFFFFF", borderTop: `1.5px solid ${G.border}` }}>
+      <footer id="contact" className="scroll-mt-24" style={{ background: "#FFFFFF", borderTop: `1.5px solid ${G.border}` }}>
         <div className="max-w-7xl mx-auto px-6 lg:px-10 py-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             <div className="md:col-span-1">
