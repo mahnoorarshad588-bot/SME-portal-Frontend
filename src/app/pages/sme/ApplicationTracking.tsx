@@ -6,37 +6,31 @@ const STAGES = [
   {
     label: "Application Submitted",
     desc: "Your application has been received and assigned a case ID.",
-    date: "June 12, 2025  ·  09:15 AM",
     done: true, active: false,
   },
   {
     label: "Referred to Bank",
     desc: "Application has been forwarded to HBL SME Finance Division for assessment.",
-    date: "June 13, 2025  ·  02:30 PM",
     done: true, active: false,
   },
   {
     label: "Under Assessment",
     desc: "HBL is conducting credit bureau check, AML screening and due diligence.",
-    date: "June 15, 2025 — In Progress",
     done: false, active: true,
   },
   {
     label: "Offer Issued",
     desc: "A conditional financing offer will be generated upon successful assessment.",
-    date: "Expected: June 20, 2025",
     done: false, active: false,
   },
   {
     label: "Offer Accepted",
     desc: "Accept the conditional offer to proceed with legal documentation.",
-    date: "Pending",
     done: false, active: false,
   },
   {
     label: "Disbursed",
     desc: "Financing amount credited to your nominated bank account.",
-    date: "Pending",
     done: false, active: false,
   },
 ];
@@ -68,7 +62,7 @@ export default function ApplicationTracking() {
                 style={{ background: "#FEF3C7", color: "#D97706" }}>Under Assessment</span>
             </div>
             <div className="p-5">
-              {STAGES.map(({ label, desc, date, done, active }, i) => (
+              {STAGES.map(({ label, desc, done, active }, i) => (
                 <div key={label} className="flex gap-4">
                   {/* Icon column */}
                   <div className="flex flex-col items-center flex-shrink-0">
@@ -96,11 +90,8 @@ export default function ApplicationTracking() {
                       {active && <span className="ml-2 text-xs px-2 py-0.5 rounded-full"
                         style={{ background: "#FEF3C7", color: "#D97706" }}>In Progress</span>}
                     </h3>
-                    <p className="text-xs leading-snug mb-1"
+                    <p className="text-xs leading-snug"
                       style={{ color: done || active ? C.textMuted : "#CBD5E1" }}>{desc}</p>
-                    <span className="text-xs" style={{ color: done ? C.green : C.textMuted, fontFamily: "var(--font-mono)", fontSize: "11px" }}>
-                      {date}
-                    </span>
                   </div>
                 </div>
               ))}

@@ -13,6 +13,13 @@ const ALL_STEPS = [
   { key: "review", label: "Review", icon: ClipboardList },
 ];
 
+const UNDERTAKING_POINTS = [
+  "I/We certify and undertake that the information furnished above is true to the best of my/our knowledge.",
+  "I/We hereby authorize the bank to obtain information/data regarding my/our Allied Concern's financial and personal details from any credit bureau, agent, financial institutions, companies or from any other sources for the purposes of processing my/our facility application form and to monitor my/our facilities/accounts.",
+  "I/We undertake that the loan will be utilized for the same purpose as specified above in the form.",
+  "I/We agree that the submission of above information and facility application form is not the approval of finance and I shall have no right to claim for finance before any forum, if my request of finance declined by bank for any reasons.",
+];
+
 function Field({ label, placeholder, value, readOnly = false, type = "text" }: {
   label: string; placeholder: string; value?: string; readOnly?: boolean; type?: string;
 }) {
@@ -61,6 +68,8 @@ export default function NewApplication() {
   const [facilities, setFacilities] = useState<Facility[]>([
     { type: FACILITY_TYPE_OPTIONS[0], amount: "", collateralType: "", collateralValue: "" },
   ]);
+  const [agreedToUndertaking, setAgreedToUndertaking] = useState(false);
+  const [showUndertakingModal, setShowUndertakingModal] = useState(false);
   const STEPS = ALL_STEPS;
   const businessStatus = selectedBusiness?.businessStatus ?? "Proprietorship";
   const requiredDocLabels = businessStatus === "Proprietorship" ? PROPRIETORSHIP_DOCS : PARTNERSHIP_DOCS;
@@ -311,11 +320,6 @@ export default function NewApplication() {
                   ))}
                 </div>
               </div>
-              <div className="p-4 rounded-xl" style={{ background: "#FEF3C7", border: "1.5px solid #D97706" }}>
-                <p className="text-xs" style={{ color: "#92400E" }}>
-                  By submitting, you confirm all information is accurate and authorize SBP to process your application.
-                </p>
-              </div>
             </div>
           </div>
         )}
@@ -337,22 +341,66 @@ export default function NewApplication() {
             Save & Continue <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
-          <button onClick={() => {
-            const caseId = addApplication({
-              businessName: selectedBusiness?.name ?? "",
-              scheme: facilities.map(f => f.type).join(", "),
-              amount: `PKR ${totalFacilityAmount.toLocaleString()}`,
-              bank: "HBL",
-              documents: docs.filter(d => d.file).map(d => ({ label: d.label, fileName: d.file!.name, fileUrl: d.fileUrl! })),
-            });
-            navigate("/sme/success", { state: { caseId } });
-          }}
+          <button
+            onClick={() => setShowUndertakingModal(true)}
             className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90"
             style={{ background: C.green }}>
             Submit Application <CheckCircle2 className="w-4 h-4" />
           </button>
         )}
       </div>
+
+      {/* Undertaking confirmation popup */}
+      {showUndertakingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgba(0,0,0,0.4)" }}>
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-base font-bold mb-1" style={{ color: C.text }}>Undertaking</h3>
+              <p className="text-xs mb-4" style={{ color: C.textMuted }}>
+                Please read and confirm the undertaking below before your application is submitted.
+              </p>
+              <div className="rounded-xl p-4 mb-4" style={{ background: "#FEF3C7", border: "1.5px solid #D97706" }}>
+                <ol className="list-decimal ml-4 space-y-2">
+                  {UNDERTAKING_POINTS.map((point, i) => (
+                    <li key={i} className="text-xs leading-relaxed" style={{ color: "#92400E" }}>{point}</li>
+                  ))}
+                </ol>
+              </div>
+              <label className="flex items-start gap-2.5 mb-5 cursor-pointer">
+                <input type="checkbox" className="mt-0.5" checked={agreedToUndertaking}
+                  onChange={e => setAgreedToUndertaking(e.target.checked)} />
+                <span className="text-sm font-medium" style={{ color: C.text }}>
+                  I/We agree to the above undertaking.
+                </span>
+              </label>
+              <div className="flex gap-3">
+                <button onClick={() => setShowUndertakingModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border text-sm font-medium"
+                  style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+                  Cancel
+                </button>
+                <button
+                  disabled={!agreedToUndertaking}
+                  onClick={() => {
+                    const caseId = addApplication({
+                      businessName: selectedBusiness?.name ?? "",
+                      scheme: facilities.map(f => f.type).join(", "),
+                      amount: `PKR ${totalFacilityAmount.toLocaleString()}`,
+                      bank: "HBL",
+                      documents: docs.filter(d => d.file).map(d => ({ label: d.label, fileName: d.file!.name, fileUrl: d.fileUrl! })),
+                    });
+                    setShowUndertakingModal(false);
+                    navigate("/sme/success", { state: { caseId } });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: C.green }}>
+                  Agree & Submit <CheckCircle2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

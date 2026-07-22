@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { jsPDF } from "jspdf";
 import { useApp } from "../../context/AppContext";
 import { C } from "../../constants/colors";
 import { ArrowLeft, CheckCircle2, X, FileText, AlertTriangle, Download, Paperclip } from "lucide-react";
@@ -30,6 +31,64 @@ export default function OfferLetter() {
     "This offer is valid for 14 calendar days from the issuance date.",
   ];
 
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFillColor(0, 104, 56);
+    doc.rect(0, 0, pageWidth, 28, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text("Conditional Offer Letter — HBL", 14, 17);
+
+    doc.setTextColor(20, 20, 20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.text("XYZ Foods Pvt. Ltd.", 14, 42);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Case: SBP-SME-2025-00098", 14, 49);
+
+    let y = 62;
+    details.forEach(({ label, value }, i) => {
+      if (i % 2 === 0) {
+        doc.setFillColor(247, 248, 250);
+        doc.rect(14, y - 6, pageWidth - 28, 10, "F");
+      }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      doc.text(label, 18, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(20, 20, 20);
+      doc.text(String(value), 100, y);
+      y += 10;
+    });
+
+    y += 6;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(20, 20, 20);
+    doc.text("Terms & Conditions", 14, y);
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    terms.forEach((t, i) => {
+      const lines = doc.splitTextToSize(`${i + 1}. ${t}`, pageWidth - 32);
+      doc.text(lines, 18, y);
+      y += lines.length * 5 + 2;
+    });
+
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Generated ${new Date().toLocaleString()}`, 14, 287);
+
+    doc.save("SBP-SME-2025-00098-Offer-Letter.pdf");
+  };
+
   return (
     <div className="px-6 py-6" style={{ fontFamily: "var(--font-display)" }}>
       <div className="flex items-center justify-between mb-6">
@@ -43,7 +102,8 @@ export default function OfferLetter() {
             <p className="text-xs" style={{ color: C.textMuted }}>Case: SBP-SME-2025-00098 · XYZ Foods Pvt. Ltd.</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border hover:bg-gray-50"
+        <button onClick={handleDownloadPdf}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border hover:bg-gray-50"
           style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
           <Download className="w-4 h-4" /> Download PDF
         </button>
@@ -156,13 +216,6 @@ export default function OfferLetter() {
                   ? "HBL will proceed with legal documentation. You will receive further instructions via email."
                   : "The offer has been declined. You may apply again with a different bank."}
               </p>
-              {decision === "accept" && (
-                <button onClick={() => navigate("/sme/post-docs")}
-                  className="mt-4 w-full py-2.5 rounded-xl text-sm font-semibold text-white"
-                  style={{ background: C.green }}>
-                  Upload Post-Approval Docs
-                </button>
-              )}
             </div>
           )}
         </div>

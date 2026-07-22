@@ -4,7 +4,7 @@ import { C } from "../../constants/colors";
 import {
   PlusCircle, FileText, Eye, Clock, CheckCircle2, XCircle,
   Banknote, ArrowRight, Activity, ChevronRight,
-  ArrowUpRight, Building2, Hash, ListChecks, History, Sparkles, PieChart,
+  ArrowUpRight, Building2, Hash, ListChecks, Sparkles, PieChart,
 } from "lucide-react";
 
 const STATUS_CONFIG = {
@@ -288,41 +288,6 @@ export default function SmeDashboard() {
             </div>
           </GradientCard>
 
-          {/* Timeline */}
-          <GradientCard accent={C.orange}>
-            <div className="p-3.5 sm:p-5">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: C.orangeLight }}>
-                  <History className="w-3.5 h-3.5" style={{ color: C.orange }} />
-                </div>
-                <h2 className="text-sm font-bold" style={{ color: C.text }}>Application Timeline</h2>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { label: "Application Submitted", date: "June 12, 2025", done: true },
-                  { label: "Referred to HBL", date: "June 13, 2025", done: true },
-                  { label: "Under Assessment", date: "June 15, 2025", done: true },
-                  { label: "Offer Issued", date: "Pending", done: false },
-                  { label: "Disbursement", date: "Pending", done: false },
-                ].map(({ label, date, done }, i) => (
-                  <div key={label} className="flex items-start gap-3">
-                    <div className="relative flex-shrink-0 mt-0.5">
-                      <div className="w-4 h-4 rounded-full flex items-center justify-center"
-                        style={{ background: done ? C.green : C.border }}>
-                        {done && <CheckCircle2 className="w-3 h-3 text-white" />}
-                      </div>
-                      {i < 4 && <div className="absolute top-4 left-1.5 w-px h-6"
-                        style={{ background: done ? C.green : C.border }} />}
-                    </div>
-                    <div className="pb-4">
-                      <div className="text-xs font-semibold" style={{ color: done ? C.text : C.textMuted }}>{label}</div>
-                      <div className="text-xs mt-0.5" style={{ color: C.textMuted, fontFamily: "var(--font-mono)", fontSize: "10px" }}>{date}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </GradientCard>
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { C } from "../../constants/colors";
 import {
   LayoutDashboard, Building2, PlusCircle, FileText, MapPin,
   Bell, ChevronDown, LogOut, Settings, Menu, X, User,
-  ChevronRight, Home, Search,
+  ChevronRight, Home, Search, Mail, CheckCircle2,
 } from "lucide-react";
 
 const NAV = [
@@ -18,6 +18,143 @@ const NAV = [
   { label: "Track Application", icon: MapPin, path: "/sme/tracking", color: C.green },
 ];
 
+function ProfileModal({ onClose }: { onClose: () => void }) {
+  const { user, setUser, businesses } = useApp();
+  const [name, setName] = useState(user?.name ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    setUser({ name: name.trim() || "Applicant", email: email.trim() });
+    setSaved(true);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
+      <div className="w-full max-w-md rounded-2xl border" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0"
+              style={{ background: C.green }}>
+              {user?.name?.[0] ?? "A"}
+            </div>
+            <div>
+              <h3 className="text-sm font-bold" style={{ color: C.text }}>My Profile</h3>
+              <p className="text-xs" style={{ color: C.textMuted }}>SME Applicant</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Full Name</label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textMuted }} />
+              <input type="text" value={name} onChange={e => { setName(e.target.value); setSaved(false); }}
+                className="w-full rounded-xl border text-sm outline-none"
+                style={{ padding: "10px 12px 10px 38px", border: `1.5px solid ${C.border}`, background: C.bg, color: C.text }} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: C.text }}>Email</label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: C.textMuted }} />
+              <input type="email" value={email} onChange={e => { setEmail(e.target.value); setSaved(false); }}
+                className="w-full rounded-xl border text-sm outline-none"
+                style={{ padding: "10px 12px 10px 38px", border: `1.5px solid ${C.border}`, background: C.bg, color: C.text }} />
+            </div>
+          </div>
+
+          <div className="rounded-xl p-3" style={{ background: C.bg, border: `1.5px solid ${C.border}` }}>
+            <div className="flex items-center justify-between text-xs">
+              <span style={{ color: C.textMuted }}>Registered Businesses</span>
+              <span className="font-semibold" style={{ color: C.text }}>{businesses.length}</span>
+            </div>
+          </div>
+
+          {saved && (
+            <div className="rounded-xl p-3 flex gap-2.5" style={{ background: C.greenLight, border: `1.5px solid ${C.green}` }}>
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.green }} />
+              <p className="text-xs leading-relaxed" style={{ color: C.green }}>Profile updated.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 p-5 border-t" style={{ borderColor: C.border }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border"
+            style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+            Close
+          </button>
+          <button onClick={handleSave}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: C.green }}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsModal({ onClose }: { onClose: () => void }) {
+  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [notifyApp, setNotifyApp] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.5)" }}>
+      <div className="w-full max-w-md rounded-2xl border" style={{ background: C.surface, border: `1.5px solid ${C.border}` }}>
+        <div className="flex items-start justify-between p-5 border-b" style={{ borderColor: C.border }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: C.greenLight }}>
+              <Settings className="w-4.5 h-4.5" style={{ color: C.green }} />
+            </div>
+            <h3 className="text-sm font-bold" style={{ color: C.text }}>Settings</h3>
+          </div>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100" style={{ color: C.textMuted }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-2">
+          <label className="flex items-center justify-between p-2.5 rounded-xl border cursor-pointer" style={{ border: `1.5px solid ${C.border}` }}>
+            <span className="text-sm" style={{ color: C.text }}>Email notifications</span>
+            <input type="checkbox" className="rounded" checked={notifyEmail} onChange={() => { setNotifyEmail(v => !v); setSaved(false); }} />
+          </label>
+          <label className="flex items-center justify-between p-2.5 rounded-xl border cursor-pointer" style={{ border: `1.5px solid ${C.border}` }}>
+            <span className="text-sm" style={{ color: C.text }}>In-app notifications</span>
+            <input type="checkbox" className="rounded" checked={notifyApp} onChange={() => { setNotifyApp(v => !v); setSaved(false); }} />
+          </label>
+
+          {saved && (
+            <div className="rounded-xl p-3 flex gap-2.5 mt-2" style={{ background: C.greenLight, border: `1.5px solid ${C.green}` }}>
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.green }} />
+              <p className="text-xs leading-relaxed" style={{ color: C.green }}>Settings saved.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 p-5 border-t" style={{ borderColor: C.border }}>
+          <button onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold border"
+            style={{ border: `1.5px solid ${C.border}`, color: C.text }}>
+            Close
+          </button>
+          <button onClick={() => setSaved(true)}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white"
+            style={{ background: C.green }}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SmeLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +163,8 @@ export default function SmeLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [bizDropdown, setBizDropdown] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const isActive = (path: string) =>
     path === "/sme" ? location.pathname === "/sme" : location.pathname.startsWith(path);
@@ -92,16 +231,21 @@ export default function SmeLayout() {
           <LogOut className="w-4 h-4 flex-shrink-0" />
           Sign Out
         </button>
-        <div className="flex items-center gap-3 px-3 pt-3 mt-2 border-t" style={{ borderColor: C.border }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ background: C.green }}>
-            {user?.name?.[0] ?? "A"}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold truncate" style={{ color: C.text }}>{user?.name ?? "User"}</div>
-            <div className="text-xs truncate" style={{ fontSize: "10px", color: C.textMuted }}>{user?.email ?? ""}</div>
-          </div>
-          <Settings className="w-3.5 h-3.5 flex-shrink-0" style={{ color: C.textMuted }} />
+        <div className="flex items-center gap-2 px-3 pt-3 mt-2 border-t" style={{ borderColor: C.border }}>
+          <button onClick={() => setShowProfile(true)}
+            className="flex items-center gap-3 flex-1 min-w-0 text-left rounded-lg hover:bg-gray-50 p-1 -m-1">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+              style={{ background: C.green }}>
+              {user?.name?.[0] ?? "A"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold truncate" style={{ color: C.text }}>{user?.name ?? "User"}</div>
+              <div className="text-xs truncate" style={{ fontSize: "10px", color: C.textMuted }}>{user?.email ?? ""}</div>
+            </div>
+          </button>
+          <button onClick={() => setShowSettings(true)} className="p-1 rounded-lg hover:bg-gray-100 flex-shrink-0">
+            <Settings className="w-3.5 h-3.5" style={{ color: C.textMuted }} />
+          </button>
         </div>
       </div>
     </div>
@@ -250,6 +394,9 @@ export default function SmeLayout() {
           <Outlet />
         </main>
       </div>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
     </div>
   );
 }

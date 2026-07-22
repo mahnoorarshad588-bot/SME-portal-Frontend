@@ -10,7 +10,6 @@ import NewApplication from "./pages/sme/NewApplication";
 import ApplicationSuccess from "./pages/sme/ApplicationSuccess";
 import ApplicationTracking from "./pages/sme/ApplicationTracking";
 import OfferLetter from "./pages/sme/OfferLetter";
-import PostDocs from "./pages/sme/PostDocs";
 import BankAuth from "./pages/bank/BankAuth";
 import BankLayout from "./pages/bank/BankLayout";
 import BankPortal from "./pages/bank/BankPortal";
@@ -33,7 +32,6 @@ export const router = createHashRouter([
       { path: "success", Component: ApplicationSuccess },
       { path: "tracking", Component: ApplicationTracking },
       { path: "offer", Component: OfferLetter },
-      { path: "post-docs", Component: PostDocs },
     ],
   },
   { path: "/bank/login", Component: BankAuth },
