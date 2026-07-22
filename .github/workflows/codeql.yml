@@ -1,27 +1,39 @@
-name: Frontend CI
+name: CodeQL Analysis
 
 on:
   push:
     branches:
       - main
-      - workflows
 
   pull_request:
     branches:
       - main
-      - workflows
 
 permissions:
+  actions: read
   contents: read
+  security-events: write
 
 jobs:
-  build:
-    name: Build React Application
+  analyze:
+    name: Analyze Code
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -32,14 +44,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Audit Dependencies
-        run: npm audit --audit-level=high
-
       - name: Build Project
         run: npm run build
 
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-build
-          path: dist/
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
